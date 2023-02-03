@@ -51,6 +51,11 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
          g_astree_nodes[node_idx].value.s );
       break;
 
+   case ASTREE_NODE_TYPE_FUNC_CALL:
+      debug_printf( 2, "%d: function call node: %s", depth,
+         g_astree_nodes[node_idx].value.s );
+      break;
+
    case ASTREE_NODE_TYPE_IF:
       debug_printf( 2, "%d: if node", depth );
       break;
@@ -87,26 +92,8 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
       break;
 
    case ASTREE_NODE_TYPE_FUNC_PARM:
-      switch( g_astree_nodes[node_idx].value_type ) {
-      case ASTREE_VALUE_TYPE_NONE:
-         debug_printf( 2, "%d: function parm node: none", depth );
-         break;
-
-      case ASTREE_VALUE_TYPE_STRING:
-         debug_printf( 2, "%d: function parm node: \"%s\"", depth,
-            g_astree_nodes[node_idx].value.s );
-         break;
-
-      case ASTREE_VALUE_TYPE_INT:
-         debug_printf( 2, "%d: function parm node: %d", depth,
-            g_astree_nodes[node_idx].value.i );
-         break;
-
-      case ASTREE_VALUE_TYPE_FLOAT:
-         debug_printf( 2, "%d: function parm node: %lf", depth,
-            g_astree_nodes[node_idx].value.f );
-         break;
-      }
+      debug_printf( 2, "%d: function parm node: \"%s\"", depth,
+         g_astree_nodes[node_idx].value.s );
       break;
 
    default:
