@@ -318,17 +318,35 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
 
    switch( c ) {
 
+   case '#':
+      if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
+         /* Just a normal char. */
+         retval = mpy_parser_append_token( parser, c );
+      } else {
+         parser->state = MPY_PARSER_STATE_COMMENT;
+      }
+      break;
+
    case '\r':
    case '\n':
-      retval = mpy_parser_parse_token( parser, c );
-      parser->last_line_indent = parser->this_line_indent;
-      parser->this_line_indent = 0;
-      parser->inside_indent = 1;
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         mpy_parser_reset_after_var( parser );
+      } else {
+         retval = mpy_parser_parse_token( parser, c );
+         parser->last_line_indent = parser->this_line_indent;
+         parser->this_line_indent = 0;
+         parser->inside_indent = 1;
+      }
       break;
 
    case '\'':
       /* TODO: Handle escaping. */
-      if( MPY_PARSER_STATE_STRING_SQ == parser->state ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( MPY_PARSER_STATE_STRING_SQ == parser->state ) {
          retval = mpy_parser_parse_token( parser, c );
       } else if( MPY_PARSER_STATE_STRING == parser->state ) {
          retval = mpy_parser_append_token( parser, c );
@@ -339,7 +357,9 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
 
    case '"':
       /* TODO: Handle escaping. */
-      if( MPY_PARSER_STATE_STRING == parser->state ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( MPY_PARSER_STATE_STRING == parser->state ) {
          retval = mpy_parser_parse_token( parser, c );
       } else if( MPY_PARSER_STATE_STRING_SQ == parser->state ) {
          retval = mpy_parser_append_token( parser, c );
@@ -349,7 +369,9 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    case ' ':
-      if( parser->inside_indent ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( parser->inside_indent ) {
          /* Add to indentation. */
          parser->this_line_indent++;
       } else if(
@@ -367,12 +389,17 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    case '>':
-      if( MPY_PARSER_STATE_IF_COND == parser->state ) {
-         retval = mpy_parser_insert_node(
-            parser, ASTREE_NODE_TYPE_COND, ASTREE_VALUE_TYPE_GT );
-      } else {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
+      } else {
+         retval = mpy_parser_insert_node(
+            parser, ASTREE_NODE_TYPE_COND, ASTREE_VALUE_TYPE_GT );
       }
       break;
 
@@ -382,13 +409,31 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
 
    case '+':
       /* TODO */
-      retval = mpy_parser_parse_token( parser, c );
-      retval = mpy_parser_insert_node(
-         parser, ASTREE_NODE_TYPE_OP, ASTREE_VALUE_TYPE_ADD );
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
+         /* Just a normal char. */
+         retval = mpy_parser_append_token( parser, c );
+      } else {
+         retval = mpy_parser_parse_token( parser, c );
+         retval = mpy_parser_insert_node(
+            parser, ASTREE_NODE_TYPE_OP, ASTREE_VALUE_TYPE_ADD );
+      }
       break;
 
    case '=':
-      if(
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
+         /* Just a normal char. */
+         retval = mpy_parser_append_token( parser, c );
+      } else if(
          MPY_PARSER_STATE_IF_COND == parser->state && '=' == parser->last_c
       ) {
          retval = mpy_parser_insert_node(
@@ -397,7 +442,9 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    case ':':
-      if( MPY_PARSER_STATE_IF_COND == parser->state ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( MPY_PARSER_STATE_IF_COND == parser->state ) {
          retval = mpy_parser_parse_token( parser, c );
 
          /* Start if statement body. */
@@ -416,14 +463,22 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
          mpy_parser_rewind( parser, ASTREE_NODE_TYPE_FUNC_DEF );
          parser->state = MPY_PARSER_STATE_NONE;
          retval = mpy_parser_add_node_sequence( parser );
-      } else {
+      } else if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
+      } else {
+         /* TODO: Create a precedence node. */
       }
       break;
 
    case '(':
-      if( MPY_PARSER_STATE_FUNC_DEF == parser->state ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( MPY_PARSER_STATE_FUNC_DEF == parser->state ) {
+         /* We're between the function name after "def" and the parms list. */
          /* Parse function name token. */
          retval = mpy_parser_parse_token( parser, c );
          parser->state = MPY_PARSER_STATE_FUNC_PARMS;
@@ -443,7 +498,9 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    case ')':
-      if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
          /* End function parms. */
          retval = mpy_parser_parse_token( parser, c );
       } else {
@@ -453,8 +510,12 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    default:
-      debug_printf( 0, "state: %d, c: %c", parser->state, c );
-      retval = mpy_parser_append_token( parser, c );
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else {
+         debug_printf( 0, "state: %d, c: %c", parser->state, c );
+         retval = mpy_parser_append_token( parser, c );
+      }
       break;
    }
 

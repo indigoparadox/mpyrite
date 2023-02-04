@@ -10,6 +10,7 @@
 #define MPY_PARSER_STATE_IF_COND    3
 #define MPY_PARSER_STATE_STRING     4
 #define MPY_PARSER_STATE_STRING_SQ  5
+#define MPY_PARSER_STATE_COMMENT    6
 
 struct MPY_PARSER {
    uint8_t inside_indent;
