@@ -164,6 +164,11 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       }
       goto cleanup;
 
+   } else if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
+
+      mpy_parser_add_node_parm( parser, parser->token );
+      goto cleanup;
+
    } else if(
       MPY_PARSER_STATE_STRING == parser->state ||
       MPY_PARSER_STATE_STRING_SQ == parser->state
@@ -185,8 +190,14 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       ) {
          debug_printf( 1, "found token: %s", parser->token );
          retval = g_mpy_parser_add_cbs[i]( parser );
-         break;
+         goto cleanup;
       }
+   }
+
+   /* Otherwise it must be a function call. */
+   if( 0 < parser->token_sz ) {
+      debug_printf( 1, "function call: %s", parser->token );
+      retval = mpy_parser_add_node_call( parser, parser->token );
    }
 
 cleanup:
@@ -264,7 +275,7 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
          parser->state = MPY_PARSER_STATE_NONE;
       } else if( MPY_PARSER_STATE_STRING_SQ == parser->state ) {
          retval = mpy_parser_append_token( parser, c );
-      } else if( MPY_PARSER_STATE_NONE == parser->state ) {
+      } else {
          parser->state = MPY_PARSER_STATE_STRING;
       }
       break;
@@ -297,6 +308,10 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       break;
 
    case ',':
+      /* TODO */
+      break;
+
+   case '+':
       /* TODO */
       break;
 
@@ -351,7 +366,7 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
          MPY_PARSER_STATE_NONE == parser->state
       ) {
          /* Probably a function invocation? */
-         retval = mpy_parser_add_node_call( parser, parser->token );
+         retval = mpy_parser_parse_token( parser, c );
          parser->state = MPY_PARSER_STATE_FUNC_PARMS;
 
       } else {
@@ -363,7 +378,7 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
    case ')':
       if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
          /* End function parms. */
-         mpy_parser_add_node_parm( parser, parser->token );
+         retval = mpy_parser_parse_token( parser, c );
          parser->state = MPY_PARSER_STATE_NONE;
       } else {
          /* Just a normal char. */
