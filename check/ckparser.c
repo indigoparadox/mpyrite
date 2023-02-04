@@ -14,7 +14,7 @@ const char test_buffer_a[] =
    "    if foo > 3:\n" \
    "        print( \"hello! \" + foo )\n" \
    "\n" \
-   "if \"__main__\" == __name__:\n" \
+   "if '__main__' == __name__:\n" \
    "    main( 123 )\n" \
    "\n";
 

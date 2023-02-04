@@ -172,6 +172,8 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    int retval = 0;
    struct ASTREE_NODE* cnode = &(g_astree_nodes[parser->tree_node_idx]);
 
+   debug_printf( 1, "token: %s, trig: %c", parser->token, trig_c );
+
    if( MPY_PARSER_STATE_FUNC_DEF == parser->state ) {
       /* Function definition name found. */
       debug_printf( 1, "def parm?: %s", parser->token );
@@ -360,10 +362,11 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
       if( MPY_PARSER_STATE_COMMENT == parser->state ) {
          /* Do nothing. */
       } else if( MPY_PARSER_STATE_STRING_SQ == parser->state ) {
+         debug_printf( 1, "end sq string: %s", parser->token );
          retval = mpy_parser_parse_token( parser, c );
       } else if( MPY_PARSER_STATE_STRING == parser->state ) {
          retval = mpy_parser_append_token( parser, c );
-      } else if( MPY_PARSER_STATE_NONE == parser->state ) {
+      } else {
          parser->state = MPY_PARSER_STATE_STRING_SQ;
       }
       break;
