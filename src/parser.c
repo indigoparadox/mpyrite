@@ -42,6 +42,7 @@ int mpy_parser_add_node_if( struct MPY_PARSER* parser ) {
    int16_t if_node_idx = -1;
 
    if_node_idx = astree_node_add_child( parser->tree_node_idx );
+   debug_printf( 1, "adding node %d: if", if_node_idx );
    astree_set_node_type( if_node_idx, ASTREE_NODE_TYPE_IF );
    parser->tree_node_idx = if_node_idx;
    parser->state = MPY_PARSER_STATE_IF_COND;
@@ -143,8 +144,16 @@ void mpy_parser_reset_after_var( struct MPY_PARSER* parser ) {
       ASTREE_NODE_TYPE_FUNC_CALL ==
       astree_get_node_type( parser->tree_node_idx )
    ) {
+      debug_printf( 1, "auto-resetting to func parms state" );
       parser->state = MPY_PARSER_STATE_FUNC_PARMS;
+   } else if(
+      ASTREE_NODE_TYPE_IF ==
+      astree_get_node_type( parser->tree_node_idx )
+   ) {
+      debug_printf( 1, "auto-resetting to if condition state" );
+      parser->state = MPY_PARSER_STATE_IF_COND;
    } else {
+      debug_printf( 1, "auto-resetting to none state" );
       parser->state = MPY_PARSER_STATE_NONE;
    }
 }
