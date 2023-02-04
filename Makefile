@@ -10,6 +10,12 @@ include maug/Makefile.inc
 
 all: mpy.ale mpy.sdl mpyd.exe mpyw.exe mpynt.exe mpy.html
 
+mpy.check: check/check.o check/ckparser.o
+	gcc -o $@ $^ $(shell pkg-config check --libs)
+
+check/%.o: check/%.c
+	gcc -c $< -o $@ $(shell pkg-config check --cflags)
+
 # Unix (Allegro)
 
 $(eval $(call TGTUNIXALE,mpy))
