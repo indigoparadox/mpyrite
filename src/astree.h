@@ -48,8 +48,13 @@ struct ASTREE_NODE {
 #define astree_get_node_type( node_idx ) \
    (g_astree_nodes[node_idx].type)
 
+#define astree_get_node( node_idx ) \
+   (&(g_astree_nodes[node_idx]))
+
+int16_t astree_init();
+void astree_free();
 int16_t astree_node_find_free();
-void astree_node_intialize( int16_t node_idx, int16_t parent_idx );
+void astree_node_initialize( int16_t node_idx, int16_t parent_idx );
 int16_t astree_node_insert_child_parent( int16_t parent_idx );
 int16_t astree_node_add_child( int16_t parent_idx );
 

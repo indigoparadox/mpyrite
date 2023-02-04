@@ -177,11 +177,10 @@ int main( int argc, char** argv ) {
    assert( script_sz == read_sz );
    fclose( script_file );
 
-   g_astree_nodes = calloc( 1, sizeof( struct ASTREE_NODE ) );
-   g_astree_nodes_sz++;
+   if( 0 > astree_init() ) {
+      goto cleanup;
+   }
    memset( &parser, '\0', sizeof( struct MPY_PARSER ) );
-   astree_node_intialize( 0, -1 );
-   astree_set_node_type( 0, ASTREE_NODE_TYPE_SEQUENCE );
    for( i = 0 ; script_sz > i ; i++ ) {
       mpy_parser_parse( &parser, script_buf[i] );
    }
@@ -198,6 +197,8 @@ cleanup:
 #ifndef MAUG_OS_WASM
 
    retroflat_shutdown( retval );
+
+   astree_free();
 
    if( NULL != script_path ) {
       free( script_path );

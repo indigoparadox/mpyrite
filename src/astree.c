@@ -6,6 +6,29 @@
 #define ASTREE_C
 #include "astree.h"
 
+int16_t astree_init() {
+   int16_t retval = 0;
+
+   g_astree_nodes_sz = 1;
+   g_astree_nodes = calloc( g_astree_nodes_sz, sizeof( struct ASTREE_NODE ) );
+   if( NULL == g_astree_nodes ) {
+      error_printf( "could not allocate syntax tree!" );
+      retval = -1;
+      goto cleanup;
+   }
+
+   astree_node_initialize( 0, -1 );
+   astree_set_node_type( 0, ASTREE_NODE_TYPE_SEQUENCE );
+
+cleanup:
+   return retval;
+}
+
+void astree_free() {
+   free( g_astree_nodes );
+   g_astree_nodes_sz = 0;
+}
+
 int16_t astree_node_find_free() {
    uint16_t i = 0;
    struct ASTREE_NODE* new_nodes = NULL;
@@ -32,7 +55,7 @@ int16_t astree_node_find_free() {
    return astree_node_find_free();
 }
 
-void astree_node_intialize( int16_t node_idx, int16_t parent_idx ) {
+void astree_node_initialize( int16_t node_idx, int16_t parent_idx ) {
    g_astree_nodes[node_idx].parent = parent_idx;
    g_astree_nodes[node_idx].active = 1;
    g_astree_nodes[node_idx].first_child = -1;
@@ -91,7 +114,7 @@ int16_t astree_node_add_child( int16_t parent_idx ) {
       g_astree_nodes[iter].next_sibling = node_out;
    }
 
-   astree_node_intialize( node_out, parent_idx );
+   astree_node_initialize( node_out, parent_idx );
 
 cleanup:
 

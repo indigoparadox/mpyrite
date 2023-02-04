@@ -23,6 +23,7 @@
       break; \
    }
 
+main_add_test_proto( astree )
 main_add_test_proto( parser )
 
 int main( int argc, char* argv[] ) {
@@ -31,6 +32,7 @@ int main( int argc, char* argv[] ) {
       nofork = 0,
       verbose = CK_VERBOSE;
 
+   main_add_test( astree );
    main_add_test( parser );
 
    return( number_failed == 0 ) ? 0 : 1;
