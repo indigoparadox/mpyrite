@@ -17,6 +17,7 @@ struct MPY_PARSER {
    int last_line_indent;
    int indent_divisor;
    int state;
+   char last_c;
    int16_t tree_node_idx;
    char token[MPY_PARSER_TOKEN_SZ_MAX];
    uint16_t token_sz;

@@ -43,41 +43,41 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
 
    switch( g_astree_nodes[node_idx].type ) {
    case ASTREE_NODE_TYPE_SEQUENCE:
-      debug_printf( 2, "%d: sequence node", depth );
+      debug_printf( 2, "\t%d: (idx: %d) sequence node", depth, node_idx );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
-      debug_printf( 2, "%d: function def node: %s", depth,
+      debug_printf( 2, "\t%d: (idx: %d) function def node: %s", depth, node_idx,
          g_astree_nodes[node_idx].value.s );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
-      debug_printf( 2, "%d: function call node: %s", depth,
+      debug_printf( 2, "\t%d: (idx: %d) function call node: %s", depth, node_idx,
          g_astree_nodes[node_idx].value.s );
       break;
 
    case ASTREE_NODE_TYPE_IF:
-      debug_printf( 2, "%d: if node", depth );
+      debug_printf( 2, "\t%d: (idx: %d) if node", depth, node_idx );
       break;
 
    case ASTREE_NODE_TYPE_LITERAL:
       switch( g_astree_nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_NONE:
-         debug_printf( 2, "%d: literal node: none", depth );
+         debug_printf( 2, "\t%d: (idx: %d) literal node: none", depth, node_idx );
          break;
 
       case ASTREE_VALUE_TYPE_INT:
-         debug_printf( 2, "%d: literal node: %d", depth,
+         debug_printf( 2, "\t%d: (idx: %d) literal node: %d", depth, node_idx,
             g_astree_nodes[node_idx].value.i );
          break;
 
       case ASTREE_VALUE_TYPE_FLOAT:
-         debug_printf( 2, "%d: literal node: %f", depth,
+         debug_printf( 2, "\t%d: (idx: %d) literal node: %f", depth, node_idx,
             g_astree_nodes[node_idx].value.f );
          break;
 
       case ASTREE_VALUE_TYPE_STRING:
-         debug_printf( 2, "%d: literal node: %s", depth,
+         debug_printf( 2, "\t%d: (idx: %d) literal node: %s", depth, node_idx,
             g_astree_nodes[node_idx].value.s );
          break;
       }
@@ -86,18 +86,30 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
    case ASTREE_NODE_TYPE_COND:
       switch( g_astree_nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_GT:
-         debug_printf( 2, "%d: cond node: greater than", depth );
+         debug_printf( 2, "\t%d: (idx: %d) cond node: greater than", depth, node_idx );
+         break;
+
+      case ASTREE_VALUE_TYPE_EQ:
+         debug_printf( 2, "\t%d: (idx: %d) cond node: equal to", depth, node_idx );
+         break;
+      }
+      break;
+
+   case ASTREE_NODE_TYPE_OP:
+      switch( g_astree_nodes[node_idx].value_type ) {
+      case ASTREE_VALUE_TYPE_ADD:
+         debug_printf( 2, "\t%d: (idx: %d) op node: add", depth, node_idx );
          break;
       }
       break;
 
    case ASTREE_NODE_TYPE_FUNC_PARM:
-      debug_printf( 2, "%d: function parm node: \"%s\"", depth,
+      debug_printf( 2, "\t%d: (idx: %d) function parm node: \"%s\"", depth, node_idx,
          g_astree_nodes[node_idx].value.s );
       break;
 
    default:
-      debug_printf( 2, "%d: unknown node", depth );
+      debug_printf( 2, "\t%d: (idx: %d) unknown node", depth, node_idx );
       break;
    }
 

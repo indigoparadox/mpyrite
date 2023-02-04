@@ -13,12 +13,15 @@
 #define ASTREE_NODE_TYPE_LITERAL    6
 #define ASTREE_NODE_TYPE_VARIABLE   7
 #define ASTREE_NODE_TYPE_FUNC_CALL  8
+#define ASTREE_NODE_TYPE_OP         9
 
 #define ASTREE_VALUE_TYPE_NONE      0
 #define ASTREE_VALUE_TYPE_INT       1
 #define ASTREE_VALUE_TYPE_FLOAT     2
 #define ASTREE_VALUE_TYPE_STRING    3
 #define ASTREE_VALUE_TYPE_GT        4
+#define ASTREE_VALUE_TYPE_ADD       5
+#define ASTREE_VALUE_TYPE_EQ        6
 
 union ASTREE_NODE_VALUE {
    uint32_t u;
@@ -42,6 +45,9 @@ struct ASTREE_NODE {
 
 #define astree_set_node_value_type( node_idx, type_in ) \
    g_astree_nodes[node_idx].value_type = type_in;
+
+#define astree_get_node_type( node_idx ) \
+   (g_astree_nodes[node_idx].type)
 
 int16_t astree_node_find_free();
 void astree_node_intialize( int16_t node_idx, int16_t parent_idx );

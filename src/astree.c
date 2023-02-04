@@ -55,6 +55,9 @@ int16_t astree_node_insert_child_parent( int16_t parent_idx ) {
       goto cleanup;
    }
 
+   debug_printf( 1, "inserting %d between %d and %d...",
+      node_idx_out, parent_idx, prev_child_idx );
+
    g_astree_nodes[parent_idx].first_child = node_idx_out;
    g_astree_nodes[node_idx_out].first_child = prev_child_idx;
 
