@@ -10,11 +10,14 @@ include maug/Makefile.inc
 
 all: mpy.ale mpy.sdl mpyd.exe mpyw.exe mpynt.exe mpy.html
 
-mpy.check: check/check.o check/ckparser.o
+CHECK_C_FILES=check/check.c check/ckparser.c src/parser.c src/astree.c
+
+mpy.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
 	gcc -o $@ $^ $(shell pkg-config check --libs)
 
-check/%.o: check/%.c
-	gcc -c $< -o $@ $(shell pkg-config check --cflags)
+obj/check/%.o: %.c
+	mkdir -p $(dir $@)
+	gcc -c $< -o $@ -Isrc/ -Imaug/src/ $(shell pkg-config check --cflags)
 
 # Unix (Allegro)
 

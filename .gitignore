@@ -2,3 +2,4 @@ obj
 *.sdl
 *.ale
 *.exe
+*.check

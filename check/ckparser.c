@@ -1,8 +1,13 @@
 
 #include <check.h>
 
+#include <maug.h>
+
+#include <parser.h>
+
 const char test_buffer_a[] =
    "\n" \
+   "# Test comment.\n" \
    "def main( foo ):\n" \
    "    if foo > 3:\n" \
    "        print( \"hello! \" + foo )\n" \
