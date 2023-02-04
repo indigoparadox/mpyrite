@@ -180,6 +180,9 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
          mpy_parser_add_node_literal(
             parser, parser->token, ASTREE_VALUE_TYPE_INT );
          mpy_parser_reset_after_var( parser );
+      /* TODO: String literal? */
+      } else {
+         mpy_parser_add_node_variable( parser, parser->token );
       }
       goto cleanup;
 
@@ -192,6 +195,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       if( mpy_parser_is_numeric( parser->token, parser->token_sz ) ) {
          mpy_parser_add_node_literal(
             parser, parser->token, ASTREE_VALUE_TYPE_INT );
+      /* TODO: String literal? */
       } else {
          mpy_parser_add_node_variable( parser, parser->token );
       }
