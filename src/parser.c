@@ -73,6 +73,8 @@ int mpy_parser_add_node_variable(
 
    var_node_idx = astree_node_add_child( parser->tree_node_idx );
    astree_set_node_type( var_node_idx, ASTREE_NODE_TYPE_VARIABLE );
+   strncpy(
+      g_astree_nodes[var_node_idx].value.s, name, ASTREE_NODE_VALUE_SZ_MAX );
 
    return 0;
 }
@@ -123,17 +125,6 @@ int mpy_parser_add_node_call( struct MPY_PARSER* parser, const char* name ) {
    return 0;
 }
 
-int mpy_parser_add_node_parm( struct MPY_PARSER* parser, const char* name ) {
-   int16_t parm_node_idx = -1;
-
-   parm_node_idx = astree_node_add_child( parser->tree_node_idx );
-   astree_set_node_type( parm_node_idx, ASTREE_NODE_TYPE_FUNC_PARM );
-   strncpy(
-      g_astree_nodes[parm_node_idx].value.s, name, ASTREE_NODE_VALUE_SZ_MAX );
-
-   return 0;
-}
-
 int mpy_parser_insert_node(
    struct MPY_PARSER* parser, uint8_t type, uint8_t value_type
 ) {
@@ -174,6 +165,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
 
    if( MPY_PARSER_STATE_FUNC_DEF == parser->state ) {
       /* Function definition name found. */
+      debug_printf( 1, "def parm?: %s", parser->token );
       if( 0 < strlen( parser->token ) ) {
          debug_printf( 1, "func name: %s", parser->token );
          strncpy( cnode->value.s, parser->token, ASTREE_NODE_VALUE_SZ_MAX );
@@ -191,12 +183,38 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       }
       goto cleanup;
 
-   } else if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
+   } else if(
+      MPY_PARSER_STATE_FUNC_PARMS == parser->state &&
+      0 < parser->token_sz
+   ) {
 
-      mpy_parser_add_node_parm( parser, parser->token );
+      debug_printf( 1, "func parm?: %s", parser->token );
+      if( mpy_parser_is_numeric( parser->token, parser->token_sz ) ) {
+         mpy_parser_add_node_literal(
+            parser, parser->token, ASTREE_VALUE_TYPE_INT );
+      } else {
+         mpy_parser_add_node_variable( parser, parser->token );
+      }
+      mpy_parser_reset_after_var( parser );
       if( ')' == trig_c ) { 
          /* This is the last param. */
          parser->state = MPY_PARSER_STATE_NONE;
+
+         debug_printf( 1, "closing func parms after %d",
+            parser->tree_node_idx );
+
+         /* Rewind up past any conds or ops. */
+         while(
+            ASTREE_NODE_TYPE_OP ==
+               astree_get_node_type( parser->tree_node_idx ) ||
+            ASTREE_NODE_TYPE_COND ==
+               astree_get_node_type( parser->tree_node_idx )
+         ) {
+            /* Rewind */
+            parser->tree_node_idx =
+               g_astree_nodes[parser->tree_node_idx].parent;
+            assert( 0 <= parser->tree_node_idx );
+         }
 
          if(
             ASTREE_NODE_TYPE_FUNC_CALL ==
@@ -342,7 +360,7 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
          retval = mpy_parser_append_token( parser, c );
       } else if( MPY_PARSER_STATE_FUNC_PARMS == parser->state ) {
          /* Do nothing. */
-      } else {
+      } else if( 0 < parser->token_sz ) {
          /* Parse last token. */
          retval = mpy_parser_parse_token( parser, c );
       }
@@ -364,6 +382,7 @@ int mpy_parser_parse( struct MPY_PARSER* parser, char c ) {
 
    case '+':
       /* TODO */
+      retval = mpy_parser_parse_token( parser, c );
       retval = mpy_parser_insert_node(
          parser, ASTREE_NODE_TYPE_OP, ASTREE_VALUE_TYPE_ADD );
       break;

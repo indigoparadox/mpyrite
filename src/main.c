@@ -77,8 +77,8 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
          break;
 
       case ASTREE_VALUE_TYPE_STRING:
-         debug_printf( 2, "\t%d: (idx: %d) literal node: %s", depth, node_idx,
-            g_astree_nodes[node_idx].value.s );
+         debug_printf( 2, "\t%d: (idx: %d) literal node: \"%s\"",
+            depth, node_idx, g_astree_nodes[node_idx].value.s );
          break;
       }
       break;
@@ -103,8 +103,8 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
       }
       break;
 
-   case ASTREE_NODE_TYPE_FUNC_PARM:
-      debug_printf( 2, "\t%d: (idx: %d) function parm node: \"%s\"", depth, node_idx,
+   case ASTREE_NODE_TYPE_VARIABLE:
+      debug_printf( 2, "\t%d: (idx: %d) variable node: %s", depth, node_idx,
          g_astree_nodes[node_idx].value.s );
       break;
 
