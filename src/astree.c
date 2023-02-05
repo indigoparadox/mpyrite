@@ -196,6 +196,10 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
          tree->nodes[node_idx].value.s );
       break;
 
+   case ASTREE_NODE_TYPE_ASSIGN:
+      debug_printf( 2, "\t%d: (idx: %d) assign node", depth, node_idx );
+      break;
+
    default:
       debug_printf( 2, "\t%d: (idx: %d) unknown node", depth, node_idx );
       break;

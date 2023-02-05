@@ -48,6 +48,7 @@ struct MPY_PARSER {
 typedef int (*mpy_parser_add_cb)( struct MPY_PARSER* parser );
 
 int mpy_parser_is_numeric( const char* token, int token_sz );
+void mpy_parser_rewind( struct MPY_PARSER* parser, int node_type );
 int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c );
 int mpy_parser_parse_c( struct MPY_PARSER* parser, char c );
 int parser_parse_buffer(
