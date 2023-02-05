@@ -22,13 +22,17 @@ struct MPY_PARSER {
    int16_t tree_node_idx;
    char token[MPY_PARSER_TOKEN_SZ_MAX];
    uint16_t token_sz;
+   struct ASTREE* tree;
 };
 
 typedef int (*mpy_parser_add_cb)( struct MPY_PARSER* parser );
 
 int mpy_parser_is_numeric( const char* token, int token_sz );
 int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c );
-int mpy_parser_parse( struct MPY_PARSER* parser, char c );
+int mpy_parser_parse_c( struct MPY_PARSER* parser, char c );
+int parser_parse_buffer(
+   struct MPY_PARSER* parser, struct ASTREE* tree,
+   const char* buffer, int buffer_sz );
 
 #define MPY_PARSER_STATEMENTS( f ) \
    f( "def", ASTREE_NODE_TYPE_FUNC_DEF, mpy_parser_add_node_def ) \

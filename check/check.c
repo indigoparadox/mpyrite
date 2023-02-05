@@ -29,7 +29,7 @@ main_add_test_proto( parser )
 int main( int argc, char* argv[] ) {
    int number_failed = 0,
       i = 0,
-      nofork = 0,
+      nofork = 1,
       verbose = CK_VERBOSE;
 
    main_add_test( astree );

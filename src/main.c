@@ -6,8 +6,8 @@
 #include <retroflt.h>
 
 #include "astree.h"
-
 #include "parser.h"
+#include "interp.h"
 
 struct TEMPLATE_DATA {
    int init;
@@ -39,21 +39,21 @@ void mpy_loop( struct TEMPLATE_DATA* data ) {
    retroflat_draw_release( NULL );
 }
 
-void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
+void mpy_dump_astree( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
 
-   switch( g_astree_nodes[node_idx].type ) {
+   switch( tree->nodes[node_idx].type ) {
    case ASTREE_NODE_TYPE_SEQUENCE:
       debug_printf( 2, "\t%d: (idx: %d) sequence node", depth, node_idx );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
       debug_printf( 2, "\t%d: (idx: %d) function def node: %s", depth, node_idx,
-         g_astree_nodes[node_idx].value.s );
+         tree->nodes[node_idx].value.s );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
       debug_printf( 2, "\t%d: (idx: %d) function call node: %s", depth, node_idx,
-         g_astree_nodes[node_idx].value.s );
+         tree->nodes[node_idx].value.s );
       break;
 
    case ASTREE_NODE_TYPE_IF:
@@ -61,30 +61,30 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
       break;
 
    case ASTREE_NODE_TYPE_LITERAL:
-      switch( g_astree_nodes[node_idx].value_type ) {
+      switch( tree->nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_NONE:
          debug_printf( 2, "\t%d: (idx: %d) literal node: none", depth, node_idx );
          break;
 
       case ASTREE_VALUE_TYPE_INT:
          debug_printf( 2, "\t%d: (idx: %d) literal node: %d", depth, node_idx,
-            g_astree_nodes[node_idx].value.i );
+            tree->nodes[node_idx].value.i );
          break;
 
       case ASTREE_VALUE_TYPE_FLOAT:
          debug_printf( 2, "\t%d: (idx: %d) literal node: %f", depth, node_idx,
-            g_astree_nodes[node_idx].value.f );
+            tree->nodes[node_idx].value.f );
          break;
 
       case ASTREE_VALUE_TYPE_STRING:
          debug_printf( 2, "\t%d: (idx: %d) literal node: \"%s\"",
-            depth, node_idx, g_astree_nodes[node_idx].value.s );
+            depth, node_idx, tree->nodes[node_idx].value.s );
          break;
       }
       break;
 
    case ASTREE_NODE_TYPE_COND:
-      switch( g_astree_nodes[node_idx].value_type ) {
+      switch( tree->nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_GT:
          debug_printf( 2, "\t%d: (idx: %d) cond node: greater than", depth, node_idx );
          break;
@@ -96,7 +96,7 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
       break;
 
    case ASTREE_NODE_TYPE_OP:
-      switch( g_astree_nodes[node_idx].value_type ) {
+      switch( tree->nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_ADD:
          debug_printf( 2, "\t%d: (idx: %d) op node: add", depth, node_idx );
          break;
@@ -105,7 +105,7 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
 
    case ASTREE_NODE_TYPE_VARIABLE:
       debug_printf( 2, "\t%d: (idx: %d) variable node: %s", depth, node_idx,
-         g_astree_nodes[node_idx].value.s );
+         tree->nodes[node_idx].value.s );
       break;
 
    default:
@@ -113,12 +113,12 @@ void mpy_dump_astree( int16_t node_idx, int16_t depth ) {
       break;
    }
 
-   if( 0 <= g_astree_nodes[node_idx].first_child ) {
-      mpy_dump_astree( g_astree_nodes[node_idx].first_child, depth + 1 );
+   if( 0 <= tree->nodes[node_idx].first_child ) {
+      mpy_dump_astree( tree, tree->nodes[node_idx].first_child, depth + 1 );
    }
 
-   if( 0 <= g_astree_nodes[node_idx].next_sibling ) {
-      mpy_dump_astree( g_astree_nodes[node_idx].next_sibling, depth );
+   if( 0 <= tree->nodes[node_idx].next_sibling ) {
+      mpy_dump_astree( tree, tree->nodes[node_idx].next_sibling, depth );
    }
 }
 
@@ -141,9 +141,9 @@ int main( int argc, char** argv ) {
    FILE* script_file = NULL;
    char* script_buf = NULL;
    int script_sz = 0,
-      read_sz = 0,
-      i = 0;
+      read_sz = 0;
    struct MPY_PARSER parser;
+   struct ASTREE tree;
 
    /* === Setup === */
 
@@ -177,14 +177,11 @@ int main( int argc, char** argv ) {
    assert( script_sz == read_sz );
    fclose( script_file );
 
-   if( 0 > astree_init() ) {
+   if( 0 > astree_init( &tree ) ) {
       goto cleanup;
    }
-   memset( &parser, '\0', sizeof( struct MPY_PARSER ) );
-   for( i = 0 ; script_sz > i ; i++ ) {
-      mpy_parser_parse( &parser, script_buf[i] );
-   }
-   mpy_dump_astree( 0, 0 );
+   parser_parse_buffer( &parser, &tree, script_buf, script_sz );
+   mpy_dump_astree( &tree, 0, 0 );
 
    data.init = 0;
 
@@ -198,7 +195,7 @@ cleanup:
 
    retroflat_shutdown( retval );
 
-   astree_free();
+   astree_free( &tree );
 
    if( NULL != script_path ) {
       free( script_path );

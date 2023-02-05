@@ -39,36 +39,21 @@ struct ASTREE_NODE {
    int16_t next_sibling;
 };
 
-#define astree_set_node_type( node_idx, type_in ) \
-   g_astree_nodes[node_idx].type = type_in;
+struct ASTREE {
+   struct ASTREE_NODE* nodes;
+   int16_t nodes_sz;
+};
 
-#define astree_set_node_value_type( node_idx, type_in ) \
-   g_astree_nodes[node_idx].value_type = type_in;
+#define astree_node( tree, node_idx ) (&((tree)->nodes[node_idx]))
 
-#define astree_get_node_type( node_idx ) \
-   (g_astree_nodes[node_idx].type)
-
-#define astree_get_node( node_idx ) \
-   (&(g_astree_nodes[node_idx]))
-
-int16_t astree_init();
-void astree_free();
-int16_t astree_node_find_free();
-void astree_node_initialize( int16_t node_idx, int16_t parent_idx );
-int16_t astree_node_insert_child_parent( int16_t parent_idx );
-int16_t astree_node_add_child( int16_t parent_idx );
-
-#ifdef ASTREE_C
-
-struct ASTREE_NODE* g_astree_nodes = NULL;
-int16_t g_astree_nodes_sz = 0;
-
-#else
-
-extern struct ASTREE_NODE* g_astree_nodes;
-extern int16_t g_astree_nodes_sz;
-
-#endif /* ASTREE_C */
+int16_t astree_init( struct ASTREE* tree );
+void astree_free( struct ASTREE* tree );
+int16_t astree_node_find_free( struct ASTREE* tree );
+void astree_node_initialize(
+   struct ASTREE* tree, int16_t node_idx, int16_t parent_idx );
+int16_t astree_node_insert_child_parent( 
+   struct ASTREE* tree, int16_t parent_idx );
+int16_t astree_node_add_child( struct ASTREE* tree, int16_t parent_idx );
 
 #endif /* !ASTREE_H */
 

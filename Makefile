@@ -1,7 +1,7 @@
 
 # vim: ft=make noexpandtab
 
-C_FILES := src/main.c src/parser.c src/astree.c
+C_FILES := src/main.c src/parser.c src/astree.c src/interp.c
 
 include maug/Makefile.inc
 
@@ -10,7 +10,7 @@ include maug/Makefile.inc
 
 all: mpy.ale mpy.sdl mpyd.exe mpyw.exe mpynt.exe mpy.html
 
-CHECK_C_FILES=check/check.c check/ckparser.c src/parser.c src/astree.c check/ckastree.c
+CHECK_C_FILES=check/check.c check/ckparser.c src/parser.c src/astree.c check/ckastree.c src/interp.c
 
 mpy.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
 	gcc -g -o $@ $^ $(shell pkg-config check --libs)

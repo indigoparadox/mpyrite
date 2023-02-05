@@ -6,10 +6,12 @@
 
 #include <astree.h>
 
+struct ASTREE g_tree;
+
 START_TEST( check_astree_node_find_free ) {
    int16_t node_id = -1;
 
-   node_id = astree_node_find_free();
+   node_id = astree_node_find_free( &g_tree );
 
    ck_assert_int_eq( node_id, 1 );
 }
@@ -22,32 +24,32 @@ START_TEST( check_astree_node_add ) {
 
    /* Test adding children. */
    for( i = 0 ; i < _i ; i++ ) {
-      node_id = astree_node_add_child( i );
+      node_id = astree_node_add_child( &g_tree, i );
 
       ck_assert_int_eq( node_id, i + 1 );
-      ck_assert_int_eq( astree_get_node( node_id )->parent, i );
-      ck_assert_int_eq( astree_get_node( node_id )->first_child, -1 );
-      ck_assert_int_eq( astree_get_node( node_id )->next_sibling, -1 );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->parent, i );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->first_child, -1 );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->next_sibling, -1 );
    }
 
    /* Test adding siblings. */
    for( j = i ; j < (_i * 2) ; j++ ) {
-      node_id = astree_node_add_child( i );
+      node_id = astree_node_add_child( &g_tree, i );
 
       ck_assert_int_eq( node_id, j + 1 );
-      ck_assert_int_eq( astree_get_node( node_id )->parent, i );
-      ck_assert_int_eq( astree_get_node( node_id )->first_child, -1 );
-      ck_assert_int_eq( astree_get_node( node_id )->next_sibling, -1 );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->parent, i );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->first_child, -1 );
+      ck_assert_int_eq( astree_node( &g_tree, node_id )->next_sibling, -1 );
    }
 }
 END_TEST
 
 static void astree_setup() {
-   astree_init();
+   astree_init( &g_tree );
 }
 
 static void astree_teardown() {
-   astree_free();
+   astree_free( &g_tree );
 }
 
 Suite* astree_suite( void ) {
