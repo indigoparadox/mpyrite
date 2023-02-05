@@ -44,7 +44,8 @@ struct ASTREE {
    int16_t nodes_sz;
 };
 
-#define astree_node( tree, node_idx ) (&((tree)->nodes[node_idx]))
+#define astree_node( tree, node_idx ) \
+   (0 <= node_idx ? &((tree)->nodes[node_idx]) : NULL)
 
 int16_t astree_init( struct ASTREE* tree );
 void astree_free( struct ASTREE* tree );

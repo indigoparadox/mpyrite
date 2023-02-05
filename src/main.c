@@ -9,11 +9,12 @@
 #include "parser.h"
 #include "interp.h"
 
-struct TEMPLATE_DATA {
+struct MPY_DATA {
    int init;
+   struct INTERP* interp;
 };
 
-void mpy_loop( struct TEMPLATE_DATA* data ) {
+void mpy_loop( struct MPY_DATA* data ) {
    int input = 0;
    struct RETROFLAT_INPUT input_evt;
 
@@ -35,6 +36,11 @@ void mpy_loop( struct TEMPLATE_DATA* data ) {
       NULL, RETROFLAT_COLOR_BLACK, 0, 0,
       retroflat_screen_w(), retroflat_screen_h(),
       RETROFLAT_FLAGS_FILL );
+
+   if( 0 > interp_tick( data->interp ) ) {
+      /* Quit on nonzero return. */
+      retroflat_quit( 0 );
+   }
 
    retroflat_draw_release( NULL );
 }
@@ -136,7 +142,7 @@ static int mpy_cli_f( const char* arg, char** p_script_path ) {
 int main( int argc, char** argv ) {
    int retval = 0;
    struct RETROFLAT_ARGS args;
-   struct TEMPLATE_DATA data;
+   struct MPY_DATA data;
    char* script_path = NULL;
    FILE* script_file = NULL;
    char* script_buf = NULL;
@@ -144,6 +150,7 @@ int main( int argc, char** argv ) {
       read_sz = 0;
    struct MPY_PARSER parser;
    struct ASTREE tree;
+   struct INTERP interp;
 
    /* === Setup === */
 
@@ -183,7 +190,10 @@ int main( int argc, char** argv ) {
    parser_parse_buffer( &parser, &tree, script_buf, script_sz );
    mpy_dump_astree( &tree, 0, 0 );
 
+   interp_init( &interp, &tree );
+
    data.init = 0;
+   data.interp = &interp;
 
    /* === Main Loop === */
 
@@ -204,6 +214,8 @@ cleanup:
    if( NULL != script_buf ) {
       free( script_buf );
    }
+
+   interp_free( &interp );
 
 #endif /* !MAUG_OS_WASM */
 
