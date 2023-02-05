@@ -89,6 +89,7 @@ int16_t astree_node_insert_child_parent(
 
    tree->nodes[parent_idx].first_child = node_idx_out;
    tree->nodes[node_idx_out].first_child = prev_child_idx;
+   tree->nodes[prev_child_idx].parent = node_idx_out;
 
 cleanup:
 

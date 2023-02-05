@@ -5,53 +5,7 @@
 
 #include "interp.h"
 
-int16_t interp_init( struct INTERP* interp, struct ASTREE* tree ) {
-   int16_t retval = 0;
-
-   memset( interp, '\0', sizeof( struct INTERP ) );
-   interp->tree = tree;
-   interp->funcs_sz_max = 10;
-   interp->funcs =
-      calloc( interp->funcs_sz_max, sizeof( struct INTERP_FUNC ) );
-   if( NULL == interp->funcs ) {
-      retval = -1;
-      goto cleanup;
-   }
-   interp->vars_sz_max = 10;
-   interp->vars = calloc( interp->vars_sz_max, sizeof( struct INTERP_VAR ) );
-   if( NULL == interp->vars ) {
-      retval = -1;
-      goto cleanup;
-   }
-
-cleanup:
-
-   if( NULL != interp->funcs && retval ) {
-      free( interp->funcs );
-      interp->funcs = NULL;
-   }
-
-   if( NULL != interp->vars && retval ) {
-      free( interp->vars );
-      interp->vars = NULL;
-   }
-
-   return 0;
-}
-
-void interp_free( struct INTERP* interp ) {
-   if( NULL != interp->funcs ) {
-      free( interp->funcs );
-      interp->funcs = NULL;
-   }
-
-   if( NULL != interp->vars ) {
-      free( interp->vars );
-      interp->vars = NULL;
-   }
-}
-
-int16_t interp_dbl_funcs( struct INTERP* interp ) {
+static int16_t interp_dbl_funcs( struct INTERP* interp ) {
    struct INTERP_FUNC* new_funcs = NULL;
 
    debug_printf( 1, "function table limit exceeded; expanding to %d...",
@@ -72,7 +26,7 @@ int16_t interp_dbl_funcs( struct INTERP* interp ) {
    return 0;
 }
 
-int16_t interp_dbl_vars( struct INTERP* interp ) {
+static int16_t interp_dbl_vars( struct INTERP* interp ) {
    struct INTERP_VAR* new_vars = NULL;
 
    debug_printf( 1, "variable table limit exceeded; expanding to %d...",
@@ -91,6 +45,90 @@ int16_t interp_dbl_vars( struct INTERP* interp ) {
 
    /* TODO: Error handling beyond asserts() above. */
    return 0;
+}
+
+static int16_t interp_dbl_stack( struct INTERP* interp ) {
+   struct INTERP_STACK_ITEM* new_stack = NULL;
+
+   debug_printf( 1, "variable table limit exceeded; expanding to %d...",
+      interp->stack_sz_max * 2 );
+   
+   assert(
+      interp->stack_sz_max * 2 * sizeof( struct INTERP_VAR ) >
+      interp->stack_sz_max * sizeof( struct INTERP_VAR ) );
+   new_stack = realloc(
+      interp->stack,
+      interp->stack_sz_max * 2 * sizeof( struct INTERP_VAR ) );
+   assert( NULL != new_stack );
+   interp->stack = new_stack;
+   
+   interp->stack_sz_max *= 2;
+
+   /* TODO: Error handling beyond asserts() above. */
+   return 0;
+}
+
+int16_t interp_init( struct INTERP* interp, struct ASTREE* tree ) {
+   int16_t retval = 0;
+
+   memset( interp, '\0', sizeof( struct INTERP ) );
+   interp->tree = tree;
+   interp->funcs_sz_max = 10;
+   interp->funcs =
+      calloc( interp->funcs_sz_max, sizeof( struct INTERP_FUNC ) );
+   if( NULL == interp->funcs ) {
+      retval = -1;
+      goto cleanup;
+   }
+   interp->vars_sz_max = 10;
+   interp->vars = calloc( interp->vars_sz_max, sizeof( struct INTERP_VAR ) );
+   if( NULL == interp->vars ) {
+      retval = -1;
+      goto cleanup;
+   }
+   interp->stack_sz_max = 10;
+   interp->stack = calloc(
+      interp->stack_sz_max, sizeof( struct INTERP_STACK_ITEM ) );
+   if( NULL == interp->stack ) {
+      retval = -1;
+      goto cleanup;
+   }
+
+cleanup:
+
+   if( NULL != interp->funcs && retval ) {
+      free( interp->funcs );
+      interp->funcs = NULL;
+   }
+
+   if( NULL != interp->vars && retval ) {
+      free( interp->vars );
+      interp->vars = NULL;
+   }
+
+   if( NULL != interp->stack && retval ) {
+      free( interp->stack );
+      interp->vars = NULL;
+   }
+
+   return 0;
+}
+
+void interp_free( struct INTERP* interp ) {
+   if( NULL != interp->funcs ) {
+      free( interp->funcs );
+      interp->funcs = NULL;
+   }
+
+   if( NULL != interp->vars ) {
+      free( interp->vars );
+      interp->vars = NULL;
+   }
+
+   if( NULL != interp->stack ) {
+      free( interp->stack );
+      interp->stack = NULL;
+   }
 }
 
 int16_t interp_set_func_pc(
@@ -178,7 +216,7 @@ int16_t interp_set_var_int(
    strncpy( interp->vars[interp->vars_sz].name, var_name,
       INTERP_FUNC_NAME_SZ_MAX );
    interp->vars[interp->vars_sz].type = ASTREE_VALUE_TYPE_INT;
-   interp->vars[i].value.i = value;
+   interp->vars[interp->vars_sz].value.i = value;
    interp->vars_sz++;
 
    return 0;
@@ -211,9 +249,61 @@ int16_t interp_set_var_str(
    strncpy( interp->vars[interp->vars_sz].name, var_name,
       INTERP_FUNC_NAME_SZ_MAX );
    interp->vars[interp->vars_sz].type = ASTREE_VALUE_TYPE_STRING;
-   memset( interp->vars[i].value.s, '\0', ASTREE_NODE_VALUE_SZ_MAX );
-   strncpy( interp->vars[i].value.s, value, ASTREE_NODE_VALUE_SZ_MAX );
+   memset( interp->vars[interp->vars_sz].value.s, '\0', 
+      ASTREE_NODE_VALUE_SZ_MAX );
+   strncpy( interp->vars[interp->vars_sz].value.s, value,
+      ASTREE_NODE_VALUE_SZ_MAX );
    interp->vars_sz++;
+
+   return 0;
+}
+
+int16_t interp_get_var(
+   struct INTERP* interp, const char* name, void* buf_out, uint32_t buf_out_sz
+) {
+   /* TODO */
+   return 0;
+}
+
+int16_t interp_stack_push_str( struct INTERP* interp, const char* value ) {
+   if( interp->stack_sz + 1 >= interp->stack_sz_max ) {
+      interp_dbl_stack( interp );
+   }
+
+   /* Add the new variable. */
+   debug_printf( 1, "pushing to stack: \"%s\"", value );
+   interp->stack[interp->stack_sz].type = ASTREE_VALUE_TYPE_STRING;
+   memset( interp->stack[interp->stack_sz].value.s, '\0',
+      ASTREE_NODE_VALUE_SZ_MAX );
+   strncpy( interp->stack[interp->stack_sz].value.s, value,
+      ASTREE_NODE_VALUE_SZ_MAX );
+   interp->stack_sz++;
+
+   return 0;
+}
+
+int16_t interp_stack_push_int( struct INTERP* interp, int16_t value ) {
+   if( interp->stack_sz + 1 >= interp->stack_sz_max ) {
+      interp_dbl_stack( interp );
+   }
+
+   /* Add the new variable. */
+   debug_printf( 1, "pushing to stack: %d", value );
+   interp->stack[interp->stack_sz].type = ASTREE_VALUE_TYPE_INT;
+   interp->stack[interp->stack_sz].value.i = value;
+   interp->stack_sz++;
+
+   return 0;
+}
+
+int16_t interp_stack_pop_int( struct INTERP* interp, int16_t* value_out ) {
+
+   /* Add the new variable. */
+   assert( 0 < interp->stack_sz );
+   interp->stack_sz--;
+   assert( interp->stack[interp->stack_sz].type == ASTREE_VALUE_TYPE_INT );
+   *value_out = interp->stack[interp->stack_sz].value.i;
+   debug_printf( 1, "popping from stack: %d", *value_out );
 
    return 0;
 }
@@ -222,13 +312,15 @@ int16_t interp_tick( struct INTERP* interp ) {
    struct ASTREE_NODE* left = NULL;
    struct ASTREE_NODE* right = NULL;
    struct ASTREE_NODE* iter = NULL;
-   int16_t retval = 0;
+   int16_t retval = 0,
+      left_v = 0,
+      right_v = 0;
 
    assert( NULL != interp );
    assert( NULL != interp->tree );
    assert( NULL != interp->tree->nodes );
 
-   debug_printf( 1, "executing %d...", interp->pc );
+   debug_printf( 1, "executing %d (last: %d)...", interp->pc, interp->last_pc );
 
    if( 0 > interp->pc ) {
       error_printf( "encountered dead end!" );
@@ -240,12 +332,73 @@ int16_t interp_tick( struct INTERP* interp ) {
 
    switch( iter->type ) {
    case ASTREE_NODE_TYPE_IF:
-      /* TODO: Nested evaluation. */
+      if( interp->last_pc != iter->first_child ) {
+         /* Need to get the result onto the stack! */
+         debug_printf( 1, "descending into if condition..." );
+         interp_set_pc( interp, iter->first_child );
+      } else {
+         /* Pop and evaluate. */
+         /* TODO: Handle non-int types! */
+         interp_stack_pop_int( interp, &left_v );
+         if( left_v ) {
+            /* If is TRUE. */
+            interp_set_pc( interp,
+               astree_node( interp->tree, iter->first_child )->next_sibling );
+         } else {
+            /* If is FALSE. */
+            interp_set_pc( interp, iter->next_sibling );
+         }
+      }
+      break;
+
+   case ASTREE_NODE_TYPE_COND:
+      if( interp->last_pc == iter->first_child ) {
+         /* Left should now be on the stack, so get right. */
+         debug_printf( 1, "descending into right node..." );
+         interp_set_pc( interp,
+            astree_node( interp->tree, iter->first_child )->next_sibling );
+
+      } else if(
+         interp->last_pc ==
+            astree_node( interp->tree, iter->first_child )->next_sibling
+      ) {
+         /* Both should now be on the stack. */
+
+         /* TODO: Evaluate! */
+
+         debug_printf( 1, "ascending to parent..." );
+         interp_set_pc( interp, iter->parent );
+
+      } else {
+         /* First visit, need to get left on the stack. */
+         debug_printf( 1, "descending into left node..." );
+         interp_set_pc( interp, iter->first_child );
+      }
+      break;
+
+   case ASTREE_NODE_TYPE_LITERAL:
+      /* Push the literal onto the stack. */
+      switch( iter->value_type ) {
+      case ASTREE_VALUE_TYPE_INT:
+         interp_stack_push_int( interp, iter->value.i );
+         break;
+
+      case ASTREE_VALUE_TYPE_STRING:
+         interp_stack_push_str( interp, iter->value.s );
+         break;
+      }
+      debug_printf( 1, "ascending to parent..." );
+      interp_set_pc( interp, iter->parent );
+      break;
+
+   case ASTREE_NODE_TYPE_VARIABLE:
+      /* Push the variable value onto the stack. */
+      /* TODO */
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
       interp_set_func_def( interp, iter );
-      interp->pc = iter->next_sibling;
+      interp_set_pc( interp, iter->next_sibling );
       break;
 
    case ASTREE_NODE_TYPE_ASSIGN:
@@ -262,12 +415,12 @@ int16_t interp_tick( struct INTERP* interp ) {
          retval = -1;
          goto cleanup;
       }
-      interp->pc = iter->next_sibling;
+      interp_set_pc( interp, iter->next_sibling );
       break;
 
    default:
       /* By default, descend into node. */
-      interp->pc = iter->first_child;
+      interp_set_pc( interp, iter->first_child );
       break;
    }
 
