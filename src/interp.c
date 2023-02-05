@@ -139,9 +139,29 @@ int16_t interp_add_func_pc(
 
 int16_t interp_add_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
    int16_t def_seq = -1;
+   struct ASTREE_NODE* seq = NULL;
+
+   /* Find the function def's sequence node. */
+   def_seq = def->first_child;
+   seq = astree_node( interp->tree, def->first_child );
+   while( NULL != seq && ASTREE_NODE_TYPE_SEQUENCE != seq->type ) {
+      def_seq = seq->next_sibling;
+      seq = astree_node( interp->tree, def_seq );
+   }
+
+   /* TODO: Error handling. */
+   assert( NULL != seq );
 
    interp_add_func_pc( interp, def->value.s, strlen( def->value.s ), def_seq );
 
+   return 0;
+}
+
+int16_t interp_add_func_cb(
+   struct INTERP* interp, const char* func_name, int16_t func_name_sz,
+   interp_func_cb cb
+) {
+   /* TODO: Some kind of wrapper to unstack vars. */
    return 0;
 }
 

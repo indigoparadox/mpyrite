@@ -24,6 +24,7 @@ int16_t interp_dbl_funcs( struct INTERP* interp );
 int16_t interp_add_func_pc(
    struct INTERP* interp, const char* func_name, int16_t func_name_sz,
    int16_t func_pc );
+int16_t interp_add_func_def( struct INTERP* interp, struct ASTREE_NODE* def );
 int16_t interp_tick( struct INTERP* interp );
 
 #endif /* !INTERP_H */

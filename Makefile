@@ -17,7 +17,7 @@ mpy.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
 
 obj/check/%.o: %.c
 	mkdir -p $(dir $@)
-	gcc -g -c $< -o $@ -Isrc/ -Imaug/src/ $(shell pkg-config check --cflags)
+	gcc -g -c $< -o $@ -Isrc/ -Imaug/src/ $(shell pkg-config check --cflags) -DDEBUG_LOG -DDEBUG -DDEBUG_THRESHOLD=1
 
 # Unix (Allegro)
 
