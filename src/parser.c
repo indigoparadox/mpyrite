@@ -242,7 +242,13 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    } else if(
       MPY_PARSER_STATE_FUNC_DEF_PARMS == parser->last_state ||
       MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->last_state ||
-      MPY_PARSER_STATE_IF_COND == parser->last_state
+      MPY_PARSER_STATE_IF_COND == parser->last_state ||
+      (MPY_PARSER_STATE_ASSIGN == parser->last_state && (
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state ||
+         MPY_PARSER_STATE_NUM == parser->state ||
+         MPY_PARSER_STATE_FLOAT == parser->state
+      ))
    ) {
 
       debug_printf( 1, "if cond or func parm?: %s", parser->token );
@@ -556,7 +562,7 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
 
    case ':':
       debug_printf( 1, "found : while state: %s (%d)",
-         gc_mpy_parser_tokens[parser->state], parser->state );
+         gc_mpy_parser_state_tokens[parser->state], parser->state );
       if( MPY_PARSER_STATE_COMMENT == parser->state ) {
          /* Do nothing. */
 

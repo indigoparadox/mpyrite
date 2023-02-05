@@ -107,7 +107,7 @@ int16_t interp_dbl_funcs( struct INTERP* interp ) {
    return 0;
 }
 
-int16_t interp_add_func_pc(
+int16_t interp_set_func_pc(
    struct INTERP* interp, const char* func_name, int16_t func_name_sz,
    int16_t func_pc
 ) {
@@ -137,7 +137,7 @@ int16_t interp_add_func_pc(
    return 0;
 }
 
-int16_t interp_add_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
+int16_t interp_set_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
    int16_t def_seq = -1;
    struct ASTREE_NODE* seq = NULL;
 
@@ -152,12 +152,12 @@ int16_t interp_add_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
    /* TODO: Error handling. */
    assert( NULL != seq );
 
-   interp_add_func_pc( interp, def->value.s, strlen( def->value.s ), def_seq );
+   interp_set_func_pc( interp, def->value.s, strlen( def->value.s ), def_seq );
 
    return 0;
 }
 
-int16_t interp_add_func_cb(
+int16_t interp_set_func_cb(
    struct INTERP* interp, const char* func_name, int16_t func_name_sz,
    interp_func_cb cb
 ) {
@@ -165,7 +165,26 @@ int16_t interp_add_func_cb(
    return 0;
 }
 
+int16_t interp_set_var_int(
+   struct INTERP* interp, const char* var_name, int16_t var_name_sz,
+   int16_t value
+) {
+
+   return 0;
+}
+
+int16_t interp_set_var_str(
+   struct INTERP* interp, const char* var_name, int16_t var_name_sz,
+   const char* value
+) {
+   return 0;
+}
+
 int16_t interp_tick( struct INTERP* interp ) {
+   struct ASTREE_NODE* left = NULL;
+   struct ASTREE_NODE* right = NULL;
+   struct ASTREE_NODE* iter = NULL;
+   int16_t retval = 0;
 
    assert( NULL != interp );
    assert( NULL != interp->tree );
@@ -178,21 +197,49 @@ int16_t interp_tick( struct INTERP* interp ) {
       return -1;
    }
 
-   switch( astree_node( interp->tree, interp->pc )->type ) {
+   iter = astree_node( interp->tree, interp->pc );
+   assert( NULL != iter );
+
+   switch( iter->type ) {
    case ASTREE_NODE_TYPE_IF:
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
-      interp_add_func_def( interp, astree_node( interp->tree, interp->pc ) );
-      interp->pc = astree_node( interp->tree, interp->pc )->next_sibling;
-      break;      
+      interp_set_func_def( interp, iter );
+      interp->pc = iter->next_sibling;
+      break;
+
+   case ASTREE_NODE_TYPE_ASSIGN:
+      /* TODO: Nested assignment. */
+      left = astree_node( interp->tree, iter->first_child );
+      assert( NULL != left );
+      right = astree_node( interp->tree, left->next_sibling );
+      assert( NULL != right );
+      if( ASTREE_VALUE_TYPE_INT == right->value_type ) {
+         interp_set_var_int( interp, left->value.s, strlen( left->value.s ),
+            atoi( right->value.s ) );
+      } else if( ASTREE_VALUE_TYPE_STRING == right->value_type ) {
+         interp_set_var_str( interp, left->value.s, strlen( left->value.s ),
+            right->value.s );
+      } else {
+         retval = -1;
+         goto cleanup;
+      }
+      interp->pc = iter->next_sibling;
+      break;
 
    default:
       /* By default, descend into node. */
-      interp->pc = astree_node( interp->tree, interp->pc )->first_child;
+      interp->pc = iter->first_child;
       break;
    }
 
-   return 0;
+cleanup:
+
+   if( retval ) {
+      error_printf( "error on node: %d", interp->pc );
+   }
+
+   return retval;
 }
 

@@ -104,7 +104,9 @@ int main( int argc, char** argv ) {
    if( 0 > astree_init( &tree ) ) {
       goto cleanup;
    }
-   parser_parse_buffer( &parser, &tree, script_buf, script_sz );
+   if( 0 > parser_parse_buffer( &parser, &tree, script_buf, script_sz ) ) {
+      goto cleanup;
+   }
    astree_dump( &tree, 0, 0 );
 
    interp_init( &interp, &tree );
