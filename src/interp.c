@@ -17,6 +17,7 @@ int16_t interp_init( struct INTERP* interp, struct ASTREE* tree ) {
       retval = -1;
       goto cleanup;
    }
+   interp->vars_sz_max = 10;
    interp->vars = calloc( interp->vars_sz_max, sizeof( struct INTERP_VAR ) );
    if( NULL == interp->vars ) {
       retval = -1;
@@ -71,10 +72,31 @@ int16_t interp_dbl_funcs( struct INTERP* interp ) {
    return 0;
 }
 
+int16_t interp_dbl_vars( struct INTERP* interp ) {
+   struct INTERP_VAR* new_vars = NULL;
+
+   debug_printf( 1, "variable table limit exceeded; expanding to %d...",
+      interp->vars_sz_max * 2 );
+   
+   assert(
+      interp->vars_sz_max * 2 * sizeof( struct INTERP_VAR ) >
+      interp->vars_sz_max * sizeof( struct INTERP_VAR ) );
+   new_vars = realloc(
+      interp->vars,
+      interp->vars_sz_max * 2 * sizeof( struct INTERP_VAR ) );
+   assert( NULL != new_vars );
+   interp->vars = new_vars;
+   
+   interp->vars_sz_max *= 2;
+
+   /* TODO: Error handling beyond asserts() above. */
+   return 0;
+}
+
 int16_t interp_set_func_pc(
    struct INTERP* interp, const char* func_name, int16_t func_pc
 ) {
-   int16_t i = 0;
+   uint32_t i = 0;
 
    for( i = 0 ; interp->funcs_sz > i ; i++ ) {
       if( 0 == strcmp( func_name, interp->funcs[i].name ) ) {
@@ -92,6 +114,8 @@ int16_t interp_set_func_pc(
 
    /* Add the new function. */
    debug_printf( 1, "adding new function \"%s\", pc = %d", func_name, func_pc );
+   memset( interp->funcs[interp->funcs_sz].name, '\0',
+      INTERP_FUNC_NAME_SZ_MAX );
    strncpy( interp->funcs[interp->funcs_sz].name, func_name,
       INTERP_FUNC_NAME_SZ_MAX );
    interp->funcs[interp->funcs_sz].type = INTERP_FUNC_PC;
@@ -131,6 +155,31 @@ int16_t interp_set_func_cb(
 int16_t interp_set_var_int(
    struct INTERP* interp, const char* var_name, int16_t value
 ) {
+   uint32_t i = 0;
+
+   for( i = 0 ; interp->vars_sz > i ; i++ ) {
+      if( 0 == strcmp( var_name, interp->vars[i].name ) ) {
+         debug_printf( 1,
+            "variable \"%s\" already exists, updating to %d...",
+            var_name, value );
+         interp->vars[i].type = ASTREE_VALUE_TYPE_INT;
+         interp->vars[i].value.i = value;
+         return 0;
+      }
+   }
+
+   if( interp->vars_sz + 1 >= interp->vars_sz_max ) {
+      interp_dbl_vars( interp );
+   }
+
+   /* Add the new variable. */
+   debug_printf( 1, "adding new variable \"%s\", %d", var_name, value );
+   memset( interp->vars[interp->vars_sz].name, '\0', INTERP_VAR_NAME_SZ_MAX );
+   strncpy( interp->vars[interp->vars_sz].name, var_name,
+      INTERP_FUNC_NAME_SZ_MAX );
+   interp->vars[interp->vars_sz].type = ASTREE_VALUE_TYPE_INT;
+   interp->vars[i].value.i = value;
+   interp->vars_sz++;
 
    return 0;
 }
@@ -138,11 +187,33 @@ int16_t interp_set_var_int(
 int16_t interp_set_var_str(
    struct INTERP* interp, const char* var_name, const char* value
 ) {
-   int16_t i = 0;
+   uint32_t i = 0;
 
-   for( i = 0 ; interp->vars_sz ; i++ ) {
-
+   for( i = 0 ; interp->vars_sz > i ; i++ ) {
+      if( 0 == strcmp( var_name, interp->vars[i].name ) ) {
+         debug_printf( 1,
+            "variable \"%s\" already exists, updating to \"%s\"...",
+            var_name, value );
+         interp->vars[i].type = ASTREE_VALUE_TYPE_STRING;
+         memset( interp->vars[i].value.s, '\0', ASTREE_NODE_VALUE_SZ_MAX );
+         strncpy( interp->vars[i].value.s, value, ASTREE_NODE_VALUE_SZ_MAX );
+         return 0;
+      }
    }
+
+   if( interp->vars_sz + 1 >= interp->vars_sz_max ) {
+      interp_dbl_vars( interp );
+   }
+
+   /* Add the new variable. */
+   debug_printf( 1, "adding new variable \"%s\", \"%s\"", var_name, value );
+   memset( interp->vars[interp->vars_sz].name, '\0', INTERP_VAR_NAME_SZ_MAX );
+   strncpy( interp->vars[interp->vars_sz].name, var_name,
+      INTERP_FUNC_NAME_SZ_MAX );
+   interp->vars[interp->vars_sz].type = ASTREE_VALUE_TYPE_STRING;
+   memset( interp->vars[i].value.s, '\0', ASTREE_NODE_VALUE_SZ_MAX );
+   strncpy( interp->vars[i].value.s, value, ASTREE_NODE_VALUE_SZ_MAX );
+   interp->vars_sz++;
 
    return 0;
 }
@@ -169,6 +240,7 @@ int16_t interp_tick( struct INTERP* interp ) {
 
    switch( iter->type ) {
    case ASTREE_NODE_TYPE_IF:
+      /* TODO: Nested evaluation. */
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
@@ -201,7 +273,7 @@ int16_t interp_tick( struct INTERP* interp ) {
 
 cleanup:
 
-   if( retval ) {
+   if( 0 > retval ) {
       error_printf( "error on node: %d", interp->pc );
    }
 

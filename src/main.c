@@ -111,6 +111,8 @@ int main( int argc, char** argv ) {
 
    interp_init( &interp, &tree );
 
+   interp_set_var_str( &interp, "__name__", "__main__" );
+
    data.init = 0;
    data.interp = &interp;
 

@@ -16,6 +16,7 @@ typedef int16_t (*interp_func_cb)( struct INTERP* );
 
 struct INTERP_VAR {
    char name[INTERP_VAR_NAME_SZ_MAX + 1];
+   uint8_t type;
    union ASTREE_NODE_VALUE value;  
 };
 
@@ -32,14 +33,14 @@ struct INTERP_FUNC {
 
 struct INTERP {
    struct INTERP_FUNC* funcs;
-   int16_t funcs_sz;
-   int16_t funcs_sz_max;
+   uint32_t funcs_sz;
+   uint32_t funcs_sz_max;
    int16_t pc;
    struct ASTREE* tree;
    /* TODO: Implement scope. */
    struct INTERP_VAR* vars;
-   int16_t vars_sz;
-   int16_t vars_sz_max;
+   uint32_t vars_sz;
+   uint32_t vars_sz_max;
 };
 
 int16_t interp_init( struct INTERP* interp, struct ASTREE* tree );
