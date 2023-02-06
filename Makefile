@@ -1,7 +1,7 @@
 
 # vim: ft=make noexpandtab
 
-C_FILES := src/main.c src/parser.c src/astree.c src/interp.c
+C_FILES := src/main.c src/parser.c src/astree.c src/interp.c src/callback.c
 
 include maug/Makefile.inc
 
@@ -17,7 +17,7 @@ mpy.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
 
 obj/check/%.o: %.c
 	mkdir -p $(dir $@)
-	gcc -g -c $< -o $@ -Isrc/ -Imaug/src/ $(shell pkg-config check --cflags) -DDEBUG_LOG -DDEBUG -DDEBUG_THRESHOLD=1
+	gcc -g -c $< -o $@ -Isrc/ -Imaug/src/ $(shell pkg-config check --cflags) -DDEBUG_LOG -DDEBUG -DDEBUG_THRESHOLD=3
 
 # Unix (Allegro)
 

@@ -230,6 +230,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    }
 
    if( MPY_PARSER_STATE_FUNC_DEF == parser->state ) {
+      /* XXX */
       /* Function definition name found. */
       debug_printf( 1, "def parm?: %s", parser->token );
       if( 0 < strlen( parser->token ) ) {
@@ -337,7 +338,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    if( '(' == trig_c ) {
       debug_printf( 1, "function call: %s", parser->token );
       retval = mpy_parser_add_node_call( parser, parser->token );
-   } else if( ' ' == trig_c ) {
+   } else if( ' ' == trig_c || ',' == trig_c ) {
       retval = mpy_parser_add_node_variable(
          parser, parser->token, ASTREE_NODE_TYPE_VARIABLE );
    }
@@ -510,7 +511,18 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       break;
 
    case ',':
-      /* TODO */
+      if( MPY_PARSER_STATE_COMMENT == parser->state ) {
+         /* Do nothing. */
+      } else if(
+         MPY_PARSER_STATE_STRING == parser->state ||
+         MPY_PARSER_STATE_STRING_SQ == parser->state
+      ) {
+         /* Just a normal char. */
+         retval = mpy_parser_append_token( parser, c );
+      } else {
+         /* Add function parm. */
+         retval = mpy_parser_parse_token( parser, c );
+      }
       break;
 
    case '+':
@@ -651,6 +663,7 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
       } else {
+         /* XXX */
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
       }

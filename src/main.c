@@ -8,6 +8,7 @@
 #include "astree.h"
 #include "parser.h"
 #include "interp.h"
+#include "callback.h"
 
 struct MPY_DATA {
    int init;
@@ -30,19 +31,10 @@ void mpy_loop( struct MPY_DATA* data ) {
 
    /* Drawing */
 
-   retroflat_draw_lock( NULL );
-
-   retroflat_rect(
-      NULL, RETROFLAT_COLOR_BLACK, 0, 0,
-      retroflat_screen_w(), retroflat_screen_h(),
-      RETROFLAT_FLAGS_FILL );
-
    if( 0 > interp_tick( data->interp ) ) {
       /* Quit on nonzero return. */
       retroflat_quit( 0 );
    }
-
-   retroflat_draw_release( NULL );
 }
 
 static int mpy_cli_f( const char* arg, char** p_script_path ) {
@@ -54,17 +46,6 @@ static int mpy_cli_f( const char* arg, char** p_script_path ) {
       strncpy( *p_script_path, arg, strlen( arg ) );
    }
    return RETROFLAT_OK;
-}
-
-int16_t mpy_print( struct INTERP* interp ) {
-   struct INTERP_STACK_ITEM* item = NULL;
-
-   item = interp_stack_pop( interp );
-   assert( NULL != item );
-
-   printf( "%s\n", item->value.s );
-
-   return 0;
 }
 
 int main( int argc, char** argv ) {
@@ -125,6 +106,9 @@ int main( int argc, char** argv ) {
    interp_set_var_str( &interp, "__name__", "__main__" );
    
    interp_set_func( &interp, "print", &mpy_print, INTERP_FUNC_CB );
+   interp_set_func( &interp, "lock", &mpy_lock, INTERP_FUNC_CB );
+   interp_set_func( &interp, "release", &mpy_release, INTERP_FUNC_CB );
+   interp_set_func( &interp, "rect", &mpy_rect, INTERP_FUNC_CB );
 
    data.init = 0;
    data.interp = &interp;

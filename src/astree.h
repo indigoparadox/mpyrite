@@ -24,6 +24,8 @@
 #define ASTREE_VALUE_TYPE_ADD       5
 #define ASTREE_VALUE_TYPE_EQ        6
 
+#define ASTREE_DUMP_DEBUG_LVL 3
+
 union ASTREE_NODE_VALUE {
    uint32_t u;
    int32_t i;

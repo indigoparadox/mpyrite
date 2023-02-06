@@ -302,6 +302,8 @@ struct INTERP_VAR* interp_get_var( struct INTERP* interp, const char* name ) {
 void interp_call_ret( struct INTERP* interp ) {
    struct INTERP_STACK_ITEM* ret = NULL;
 
+   debug_printf( 1, "attempting to return..." );
+
    ret = interp_stack_pop( interp );
    if( NULL != ret ) {
       assert( ASTREE_VALUE_TYPE_INT == ret->type );
@@ -405,6 +407,7 @@ int16_t interp_tick( struct INTERP* interp ) {
    struct ASTREE_NODE* left = NULL;
    struct ASTREE_NODE* right = NULL;
    struct ASTREE_NODE* iter = NULL;
+   int16_t seq = 0;
    int16_t retval = 0;
    struct INTERP_VAR* var = NULL;
    struct INTERP_STACK_ITEM* item1 = NULL,
@@ -578,12 +581,36 @@ int16_t interp_tick( struct INTERP* interp ) {
          interp_set_pc( interp, iter->next_sibling );
 
       } else {
+         /* If we're being called from a non-adjacent instruction, we're
+          * probably being asked to run (or there's a bug(!))
+          */
          debug_printf( 1, "preparing function: %s", iter->value.s );
 
          /* Pop args from stack into vars. */
+
+         /* We need to pop the stack into vars in reverse order, so start
+          * at the end.
+          */
          left = astree_node( interp->tree, iter->first_child );
+         assert( NULL != left ); /* At least have the seq node, if no args! */
+         while(
+            ASTREE_NODE_TYPE_SEQUENCE !=
+               astree_node( interp->tree, left->next_sibling )->type
+         ) {
+            left = astree_node( interp->tree, left->next_sibling );
+         }
+         assert( NULL != left );
+         assert(
+            ASTREE_NODE_TYPE_SEQUENCE ==
+            astree_node( interp->tree, left->next_sibling )->type );
+         /* Prime function seq to run next cycle. */
+         interp_set_pc( interp, left->next_sibling );
+
+         /* Cycle through the parms list backwards from last parm. */
          while( NULL != left ) {
+            debug_printf( 1, "left type %d: popping to parms...", left->type );
             if( ASTREE_NODE_TYPE_FUNC_DEF_PARM == left->type ) {
+               /* Pop stack nodes pushed by last few ticks and push to parms. */
                item1 = interp_stack_pop( interp );
                switch( item1->type ) {
                case ASTREE_VALUE_TYPE_INT:
@@ -594,27 +621,70 @@ int16_t interp_tick( struct INTERP* interp ) {
                   interp_set_var_str( interp, left->value.s, item1->value.s );
                   break;
                }
-            } else if( ASTREE_NODE_TYPE_SEQUENCE ) {
-               /* Prime function seq to run next cycle. */
-               interp_set_pc( interp, right->next_sibling );
             }
             right = left;
-            left = astree_node( interp->tree, left->next_sibling );
+
+            /* Iterate through arg nodes backwards. */
+            debug_printf( 1, "next prev: %d", left->prev_sibling );
+            left = astree_node( interp->tree, left->prev_sibling );
          }
       }
       break;
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
 
-      debug_printf( 1, "pushing return pc to stack..." );
-      interp_stack_push_int( interp, iter->next_sibling );
-
       if( interp_is_first_pass( interp, iter ) ) {
-         /* Descend into function variables to push them on the stack. */
-         interp_set_pc( interp, iter->first_child );
+         /* Push the return PC before we parse potential args so it's below
+          * them on the stack.
+          */
+         debug_printf( 1, "pushing return pc to stack..." );
+         interp_stack_push_int( interp, iter->next_sibling );
+
+         if( 0 <= iter->first_child ) {
+            /* There are args, so push the arg PC to the stack so the next pass
+             * will be able to pop it (see below) and see that we parsed an arg.
+             * Then descend to push the args. */
+
+            debug_printf( 1, "descending to parse first arg..." );
+            interp_set_pc( interp, iter->first_child );
+         } else {
+            /* Call the function with no args. */
+            interp_call_func( interp, iter->value.s );
+         }
       } else {
-         /* Call the function with the stack arranged on first pass. */
-         interp_call_func( interp, iter->value.s );
+         assert( -1 != iter->first_child );
+         /* We're coming back from parsing an arg, so we know we have at least
+          * one child node.
+          */
+         /*item1 = interp_stack_pop( interp ); */
+         
+         left = astree_node( interp->tree, iter->first_child );
+         assert( NULL != left );
+         if( interp->prev_pc != iter->first_child ) {
+            /* We haven't returned from the first child, so it must be a
+             * subsequent sibling!
+             */
+            debug_printf( 1, "XXX prev %d vs fc %d", interp->prev_pc, iter->first_child );
+            debug_printf( 1, "left ns: %d", left->next_sibling );
+            while( NULL != left && interp->prev_pc != left->next_sibling ) {
+               debug_printf( 1, "paging arg to %d...", left->next_sibling );
+               left = astree_node( interp->tree, left->next_sibling );
+            }
+
+            /* Left should now be the arg before the last parsed. */
+            left = astree_node( interp->tree, left->next_sibling );
+            /* Now it should be the last parsed. */
+            debug_printf( 1, "left ns: %d", left->next_sibling );
+         }
+
+         if( NULL != left && 0 <= left->next_sibling ) {
+            debug_printf( 1, "descending into arg: %d", left->next_sibling );
+            interp_set_pc( interp, left->next_sibling );
+         } else {
+            debug_printf( 1, "calling function!" );
+            /* Call the function with the stack arranged on first pass. */
+            interp_call_func( interp, iter->value.s );
+         }
       }
       break;
 
