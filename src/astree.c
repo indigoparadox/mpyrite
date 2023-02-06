@@ -202,6 +202,17 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
       debug_printf( 2, "\t%d: (idx: %d) assign node", depth, node_idx );
       break;
 
+   case ASTREE_NODE_TYPE_FUNC_DEF_PARM:
+      debug_printf( 2, "\t%d: (idx: %d) function def parm node: %s",
+         depth, node_idx, tree->nodes[node_idx].value.s );
+
+#if 0
+   case ASTREE_NODE_TYPE_FUNC_CALL_PARMS:
+      debug_printf( 2, "\t%d: (idx: %d) function call parms node",
+         depth, node_idx );
+      break;
+#endif
+
    default:
       debug_printf( 2, "\t%d: (idx: %d) unknown node", depth, node_idx );
       break;

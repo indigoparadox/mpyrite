@@ -163,7 +163,9 @@ int16_t interp_set_func_pc(
    return 0;
 }
 
+#if 0
 int16_t interp_set_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
+
    int16_t def_seq = -1;
    struct ASTREE_NODE* seq = NULL;
 
@@ -182,6 +184,7 @@ int16_t interp_set_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
 
    return 0;
 }
+#endif
 
 int16_t interp_set_func_cb(
    struct INTERP* interp, const char* func_name, interp_func_cb cb
@@ -499,8 +502,41 @@ int16_t interp_tick( struct INTERP* interp ) {
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
-      interp_set_func_def( interp, iter );
-      interp_set_pc( interp, iter->next_sibling );
+      if(
+         iter->prev_sibling == interp->prev_pc ||
+         iter->parent == interp->prev_pc
+      ) {
+         /* Defining the function... */
+         debug_printf( 1, "defining function: %s", iter->value.s );
+         /* interp_set_func_def( interp, iter ); */
+         interp_set_func_pc( interp, iter->value.s, interp->pc );
+         interp_set_pc( interp, iter->next_sibling );
+
+      } else {
+         debug_printf( 1, "preparing function: %s", iter->value.s );
+
+         /* Pop args from stack into vars. */
+         left = astree_node( interp->tree, iter->first_child );
+         while( NULL != left ) {
+            if( ASTREE_NODE_TYPE_FUNC_DEF_PARM == left->type ) {
+               item1 = interp_stack_pop( interp );
+               switch( item1->type ) {
+               case ASTREE_VALUE_TYPE_INT:
+                  interp_set_var_int( interp, left->value.s, item1->value.i );
+                  break;
+
+               case ASTREE_VALUE_TYPE_STRING:
+                  interp_set_var_str( interp, left->value.s, item1->value.s );
+                  break;
+               }
+            } else if( ASTREE_NODE_TYPE_SEQUENCE ) {
+               /* Prime function seq to run next cycle. */
+               interp_set_pc( interp, right->next_sibling );
+            }
+            right = left;
+            left = astree_node( interp->tree, left->next_sibling );
+         }
+      }
       break;
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
