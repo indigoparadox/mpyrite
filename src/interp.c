@@ -270,6 +270,37 @@ struct INTERP_VAR* interp_get_var( struct INTERP* interp, const char* name ) {
    return NULL;
 }
 
+int16_t interp_call_func( struct INTERP* interp, const char* name ) {
+   uint32_t i = 0;
+   struct INTERP_FUNC* func = NULL;
+   int16_t retval = 0;
+
+   debug_printf( 1, "calling function: %s()", name );
+
+   for( i = 0 ; interp->funcs_sz > i ; i++ ) {
+      if( 0 == strcmp( name, interp->funcs[i].name ) ) {
+          func = &(interp->funcs[i]);
+      }
+   }
+
+   if( NULL == func ) {
+      error_printf( "could not find function: %s()", name );
+      retval = -1;
+   }
+
+   switch( func->type ) {
+   case INTERP_FUNC_CB:
+      /* TODO */
+      break;
+
+   case INTERP_FUNC_PC:
+      interp_set_pc( interp, func->exe.pc );
+      break;
+   }
+
+   return retval;
+}
+
 int16_t interp_stack_push_str( struct INTERP* interp, const char* value ) {
    if( interp->stack_sz + 1 >= interp->stack_sz_max ) {
       interp_dbl_stack( interp );
@@ -337,7 +368,7 @@ int16_t interp_tick( struct INTERP* interp ) {
    assert( NULL != interp->tree );
    assert( NULL != interp->tree->nodes );
 
-   debug_printf( 1, "executing %d (last: %d)...", interp->pc, interp->last_pc );
+   debug_printf( 1, "executing %d (prev: %d)...", interp->pc, interp->prev_pc );
 
    if( 0 > interp->pc ) {
       error_printf( "encountered dead end!" );
@@ -349,7 +380,7 @@ int16_t interp_tick( struct INTERP* interp ) {
 
    switch( iter->type ) {
    case ASTREE_NODE_TYPE_IF:
-      if( interp->last_pc != iter->first_child ) {
+      if( interp->prev_pc != iter->first_child ) {
          /* Need to get the result onto the stack! */
          debug_printf( 1, "descending into if condition..." );
          interp_set_pc( interp, iter->first_child );
@@ -375,14 +406,14 @@ int16_t interp_tick( struct INTERP* interp ) {
       break;
 
    case ASTREE_NODE_TYPE_COND:
-      if( interp->last_pc == iter->first_child ) {
+      if( interp->prev_pc == iter->first_child ) {
          /* Left should now be on the stack, so get right. */
          debug_printf( 1, "descending into right node..." );
          interp_set_pc( interp,
             astree_node( interp->tree, iter->first_child )->next_sibling );
 
       } else if(
-         interp->last_pc ==
+         interp->prev_pc ==
             astree_node( interp->tree, iter->first_child )->next_sibling
       ) {
          /* Both should now be on the stack. */
@@ -470,6 +501,20 @@ int16_t interp_tick( struct INTERP* interp ) {
    case ASTREE_NODE_TYPE_FUNC_DEF:
       interp_set_func_def( interp, iter );
       interp_set_pc( interp, iter->next_sibling );
+      break;
+
+   case ASTREE_NODE_TYPE_FUNC_CALL:
+
+      if(
+         iter->prev_sibling == interp->prev_pc ||
+         iter->parent == interp->prev_pc
+      ) {
+         /* TODO */
+         interp_set_pc( interp, iter->first_child );
+      } else {
+         interp_call_func( interp, iter->value.s );
+      }
+      
       break;
 
    case ASTREE_NODE_TYPE_ASSIGN:

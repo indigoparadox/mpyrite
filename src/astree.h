@@ -4,16 +4,17 @@
 
 #define ASTREE_NODE_VALUE_SZ_MAX 255
 
-#define ASTREE_NODE_TYPE_NONE       0
-#define ASTREE_NODE_TYPE_SEQUENCE   1
-#define ASTREE_NODE_TYPE_FUNC_DEF   2
-#define ASTREE_NODE_TYPE_IF         4
-#define ASTREE_NODE_TYPE_COND       5
-#define ASTREE_NODE_TYPE_LITERAL    6
-#define ASTREE_NODE_TYPE_VARIABLE   7
-#define ASTREE_NODE_TYPE_FUNC_CALL  8
-#define ASTREE_NODE_TYPE_OP         9
-#define ASTREE_NODE_TYPE_ASSIGN     10
+#define ASTREE_NODE_TYPE_NONE          0
+#define ASTREE_NODE_TYPE_SEQUENCE      1
+#define ASTREE_NODE_TYPE_FUNC_DEF      2
+#define ASTREE_NODE_TYPE_IF            4
+#define ASTREE_NODE_TYPE_COND          5
+#define ASTREE_NODE_TYPE_LITERAL       6
+#define ASTREE_NODE_TYPE_VARIABLE      7
+#define ASTREE_NODE_TYPE_FUNC_CALL     8
+#define ASTREE_NODE_TYPE_OP            9
+#define ASTREE_NODE_TYPE_ASSIGN        10
+#define ASTREE_NODE_TYPE_FUNC_DEF_PARM 11
 
 #define ASTREE_VALUE_TYPE_NONE      0
 #define ASTREE_VALUE_TYPE_INT       1
@@ -38,6 +39,7 @@ struct ASTREE_NODE {
    int16_t parent;
    int16_t first_child;
    int16_t next_sibling;
+   int16_t prev_sibling;
 };
 
 struct ASTREE {

@@ -46,7 +46,7 @@ START_TEST( check_parser_func_def ) {
 
    /* ( foo ) */
    iter = astree_node( &g_tree, iter->first_child );
-   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_DEF_PARM );
 
    /* : */
    iter = astree_node( &g_tree, iter->next_sibling );
@@ -112,7 +112,7 @@ START_TEST( check_parser_a ) {
    /* ( foo ) */
    iter = astree_node( &g_tree, iter->first_child );
    ck_assert_ptr_ne( iter, NULL );
-   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_DEF_PARM );
 
    /* : */
    iter = astree_node( &g_tree, iter->next_sibling );

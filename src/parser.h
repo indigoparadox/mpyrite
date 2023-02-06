@@ -23,7 +23,7 @@
    debug_printf( 1, "new state: %s (prev: %s)", \
       gc_mpy_parser_state_tokens[new_state], \
       gc_mpy_parser_state_tokens[parser->state] ); \
-   parser->last_state = parser->state; \
+   parser->prev_state = parser->state; \
    parser->state = new_state;
 
 #define mpy_parser_node_idx( parser, new_idx ) \
@@ -34,10 +34,10 @@
 struct MPY_PARSER {
    uint8_t inside_indent;
    int this_line_indent;
-   int last_line_indent;
+   int prev_line_indent;
    int indent_divisor;
    int state;
-   int last_state;
+   int prev_state;
    int16_t tree_node_idx;
    char token[MPY_PARSER_TOKEN_SZ_MAX];
    uint16_t token_sz;

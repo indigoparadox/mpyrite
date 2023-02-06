@@ -10,6 +10,8 @@ typedef int16_t (*interp_func_cb)( struct INTERP* );
 
 #define INTERP_FUNC_NAME_SZ_MAX 255
 #define INTERP_VAR_NAME_SZ_MAX 255
+#define INTERP_FUNC_ARGS_SZ_MAX 24
+#define INTERP_FUNC_ARG_NAME_SZ_MAX 255
 
 #define INTERP_FUNC_PC 0
 #define INTERP_FUNC_CB 1
@@ -41,7 +43,7 @@ struct INTERP {
    uint32_t funcs_sz;
    uint32_t funcs_sz_max;
    int16_t pc;
-   int16_t last_pc;
+   int16_t prev_pc;
    struct ASTREE* tree;
    /* TODO: Implement scope. */
    struct INTERP_VAR* vars;
@@ -53,7 +55,7 @@ struct INTERP {
 };
 
 #define interp_set_pc( interp, new_pc ) \
-   interp->last_pc = interp->pc; \
+   interp->prev_pc = interp->pc; \
    interp->pc = new_pc;
 
 int16_t interp_init( struct INTERP* interp, struct ASTREE* tree );

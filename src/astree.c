@@ -119,6 +119,7 @@ int16_t astree_node_add_child( struct ASTREE* tree, int16_t parent_idx ) {
 
       /* Create the new sibling of the last child. */
       tree->nodes[iter].next_sibling = node_out;
+      tree->nodes[node_out].prev_sibling = iter;
    }
 
    astree_node_initialize( tree, node_out, parent_idx );
