@@ -258,11 +258,16 @@ int16_t interp_set_var_str(
    return 0;
 }
 
-int16_t interp_get_var(
-   struct INTERP* interp, const char* name, void* buf_out, uint32_t buf_out_sz
-) {
-   /* TODO */
-   return 0;
+struct INTERP_VAR* interp_get_var( struct INTERP* interp, const char* name ) {
+   uint32_t i = 0;
+
+   for( i = 0 ; interp->vars_sz > i ; i++ ) {
+      if( 0 == strcmp( name, interp->vars[i].name ) ) {
+         return &(interp->vars[i]);
+      }
+   }
+
+   return NULL;
 }
 
 int16_t interp_stack_push_str( struct INTERP* interp, const char* value ) {
@@ -296,25 +301,37 @@ int16_t interp_stack_push_int( struct INTERP* interp, int16_t value ) {
    return 0;
 }
 
-int16_t interp_stack_pop_int( struct INTERP* interp, int16_t* value_out ) {
+struct INTERP_STACK_ITEM* interp_stack_pop( struct INTERP* interp ) {
 
    /* Add the new variable. */
    assert( 0 < interp->stack_sz );
    interp->stack_sz--;
-   assert( interp->stack[interp->stack_sz].type == ASTREE_VALUE_TYPE_INT );
-   *value_out = interp->stack[interp->stack_sz].value.i;
-   debug_printf( 1, "popping from stack: %d", *value_out );
 
-   return 0;
+#ifdef DEBUG
+   switch( interp->stack[interp->stack_sz].type ) {
+   case ASTREE_VALUE_TYPE_INT:
+      debug_printf( 1, "popping from stack: %d", 
+         interp->stack[interp->stack_sz].value.i );
+      break;
+
+   case ASTREE_VALUE_TYPE_STRING:
+      debug_printf( 1, "popping from stack: %s", 
+         interp->stack[interp->stack_sz].value.s );
+      break;
+   }
+#endif /* DEBUG */
+
+   return &(interp->stack[interp->stack_sz]);
 }
 
 int16_t interp_tick( struct INTERP* interp ) {
    struct ASTREE_NODE* left = NULL;
    struct ASTREE_NODE* right = NULL;
    struct ASTREE_NODE* iter = NULL;
-   int16_t retval = 0,
-      left_v = 0,
-      right_v = 0;
+   int16_t retval = 0;
+   struct INTERP_VAR* var = NULL;
+   struct INTERP_STACK_ITEM* item1 = NULL,
+      * item2 = NULL;
 
    assert( NULL != interp );
    assert( NULL != interp->tree );
@@ -338,14 +355,20 @@ int16_t interp_tick( struct INTERP* interp ) {
          interp_set_pc( interp, iter->first_child );
       } else {
          /* Pop and evaluate. */
-         /* TODO: Handle non-int types! */
-         interp_stack_pop_int( interp, &left_v );
-         if( left_v ) {
+         item1 = interp_stack_pop( interp );
+         assert( NULL != item1 );
+         if(
+            (ASTREE_VALUE_TYPE_INT == item1->type && 0 != item1->value.i) ||
+            (ASTREE_VALUE_TYPE_STRING == item1->type &&
+               '\0' != item1->value.s[0])
+         ) {
             /* If is TRUE. */
+            debug_printf( 1, "if condition TRUE" );
             interp_set_pc( interp,
                astree_node( interp->tree, iter->first_child )->next_sibling );
          } else {
             /* If is FALSE. */
+            debug_printf( 1, "if condition FALSE" );
             interp_set_pc( interp, iter->next_sibling );
          }
       }
@@ -363,8 +386,36 @@ int16_t interp_tick( struct INTERP* interp ) {
             astree_node( interp->tree, iter->first_child )->next_sibling
       ) {
          /* Both should now be on the stack. */
+         item1 = interp_stack_pop( interp );
+         assert( NULL != item1 );
+         item2 = interp_stack_pop( interp );
+         assert( NULL != item2 );
 
          /* TODO: Evaluate! */
+         if(
+            (ASTREE_VALUE_TYPE_EQ == iter->value_type && (
+
+               (ASTREE_VALUE_TYPE_STRING == item1->type &&
+                  ASTREE_VALUE_TYPE_STRING == item2->type &&
+                  0 == strncmp(
+                     item1->value.s, item2->value.s, ASTREE_NODE_VALUE_SZ_MAX ))
+
+               || (ASTREE_VALUE_TYPE_INT == item1->type &&
+                  ASTREE_VALUE_TYPE_INT == item2->type &&
+                  item1->value.i == item2->value.i)
+            
+            )) || (ASTREE_VALUE_TYPE_GT == iter->value_type && (
+
+               (ASTREE_VALUE_TYPE_INT == item1->type &&
+                  ASTREE_VALUE_TYPE_INT == item2->type &&
+                  item1->value.i > item2->value.i)
+            
+            ))
+         ) {
+            interp_stack_push_int( interp, 1 );
+         } else {
+            interp_stack_push_int( interp, 0 );
+         }
 
          debug_printf( 1, "ascending to parent..." );
          interp_set_pc( interp, iter->parent );
@@ -393,7 +444,27 @@ int16_t interp_tick( struct INTERP* interp ) {
 
    case ASTREE_NODE_TYPE_VARIABLE:
       /* Push the variable value onto the stack. */
-      /* TODO */
+      var = interp_get_var( interp, iter->value.s );
+      assert( NULL != var );
+      switch( var->type ) {
+      case ASTREE_VALUE_TYPE_STRING:
+         debug_printf( 1, "var %s value: %s", iter->value.s, var->value.s );
+         interp_stack_push_str( interp, var->value.s );
+         break;
+         break;
+
+      case ASTREE_VALUE_TYPE_INT:
+         debug_printf( 1, "var %s value: %d", iter->value.s, var->value.i );
+         interp_stack_push_int( interp, var->value.i );
+         break;
+
+      case ASTREE_VALUE_TYPE_FLOAT:
+         debug_printf( 1, "var %s value: %f", iter->value.s, var->value.f );
+         /* TODO */
+         break;
+      }
+      debug_printf( 1, "ascending to parent..." );
+      interp_set_pc( interp, iter->parent );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
