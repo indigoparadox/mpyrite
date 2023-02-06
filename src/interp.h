@@ -58,18 +58,28 @@ struct INTERP {
    interp->prev_pc = interp->pc; \
    interp->pc = new_pc;
 
+/**
+ * \brief Determine if this tree node is being executed from a parent
+ *        (first-pass) or returning from a child (non-first-pass).
+ */
+#define interp_is_first_pass( interp, node ) \
+   (node->prev_sibling == interp->prev_pc || node->parent == interp->prev_pc)
+
 int16_t interp_init( struct INTERP* interp, struct ASTREE* tree );
 void interp_free( struct INTERP* interp );
-int16_t interp_set_func_pc(
-   struct INTERP* interp, const char* func_name, int16_t func_pc );
-int16_t interp_set_func_def( struct INTERP* interp, struct ASTREE_NODE* def );
+int16_t interp_set_func(
+   struct INTERP* interp, const char* func_name, void* func_pc_cb,
+   uint8_t func_type );
+int16_t interp_set_func_cb(
+   struct INTERP* interp, const char* func_name, interp_func_cb cb );
 int16_t interp_set_var_int(
    struct INTERP* interp, const char* var_name, int16_t value );
 int16_t interp_set_var_str(
    struct INTERP* interp, const char* var_name, const char* value );
+int16_t interp_call_func( struct INTERP* interp, const char* name );
 int16_t interp_stack_push_str( struct INTERP* interp, const char* value );
 int16_t interp_stack_push_int( struct INTERP* interp, int16_t value );
-int16_t interp_stack_pop_int( struct INTERP* interp, int16_t* value_out );
+struct INTERP_STACK_ITEM* interp_stack_pop( struct INTERP* interp );
 int16_t interp_tick( struct INTERP* interp );
 
 #endif /* !INTERP_H */

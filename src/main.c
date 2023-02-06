@@ -56,6 +56,17 @@ static int mpy_cli_f( const char* arg, char** p_script_path ) {
    return RETROFLAT_OK;
 }
 
+int16_t mpy_print( struct INTERP* interp ) {
+   struct INTERP_STACK_ITEM* item = NULL;
+
+   item = interp_stack_pop( interp );
+   assert( NULL != item );
+
+   printf( "%s\n", item->value.s );
+
+   return 0;
+}
+
 int main( int argc, char** argv ) {
    int retval = 0;
    struct RETROFLAT_ARGS args;
@@ -112,6 +123,8 @@ int main( int argc, char** argv ) {
    interp_init( &interp, &tree );
 
    interp_set_var_str( &interp, "__name__", "__main__" );
+   
+   interp_set_func( &interp, "print", &mpy_print, INTERP_FUNC_CB );
 
    data.init = 0;
    data.interp = &interp;

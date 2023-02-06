@@ -131,17 +131,32 @@ void interp_free( struct INTERP* interp ) {
    }
 }
 
-int16_t interp_set_func_pc(
-   struct INTERP* interp, const char* func_name, int16_t func_pc
+int16_t interp_set_func(
+   struct INTERP* interp, const char* func_name, void* func_pc_cb,
+   uint8_t func_type
 ) {
    uint32_t i = 0;
+   int16_t* func_pc = (int16_t*)(func_pc_cb);
+   interp_func_cb func_cb = (interp_func_cb)(func_pc_cb);
 
    for( i = 0 ; interp->funcs_sz > i ; i++ ) {
       if( 0 == strcmp( func_name, interp->funcs[i].name ) ) {
-         debug_printf( 1, "function \"%s\" already exists, updating to %d...",
-            func_name, func_pc );
-         interp->funcs[i].type = INTERP_FUNC_PC;
-         interp->funcs[i].exe.pc = func_pc;
+         interp->funcs[i].type = func_type;
+         switch( func_type ) {
+         case INTERP_FUNC_PC:
+            debug_printf( 1,
+               "function \"%s\" already exists, updating to: %d...",
+               func_name, *func_pc );
+            interp->funcs[i].exe.pc = *func_pc;
+            break;
+
+         case INTERP_FUNC_CB:
+            debug_printf( 1,
+               "function \"%s\" already exists, updating to: %p...",
+               func_name, *func_cb );
+            interp->funcs[i].exe.cb = *func_cb;
+            break;
+         }
          return 0;
       }
    }
@@ -151,13 +166,24 @@ int16_t interp_set_func_pc(
    }
 
    /* Add the new function. */
-   debug_printf( 1, "adding new function \"%s\", pc = %d", func_name, func_pc );
    memset( interp->funcs[interp->funcs_sz].name, '\0',
       INTERP_FUNC_NAME_SZ_MAX );
    strncpy( interp->funcs[interp->funcs_sz].name, func_name,
       INTERP_FUNC_NAME_SZ_MAX );
-   interp->funcs[interp->funcs_sz].type = INTERP_FUNC_PC;
-   interp->funcs[interp->funcs_sz].exe.pc = func_pc;
+   interp->funcs[interp->funcs_sz].type = func_type;
+   switch( func_type ) {
+   case INTERP_FUNC_PC:
+      debug_printf( 1, "adding new function: \"%s\", pc = %d",
+         func_name, *func_pc );
+      interp->funcs[interp->funcs_sz].exe.pc = *func_pc;
+      break;
+
+   case INTERP_FUNC_CB:
+      debug_printf( 1, "adding new function: \"%s\", cb = %p",
+         func_name, *func_cb );
+      interp->funcs[interp->funcs_sz].exe.cb = *func_cb;
+      break;
+   }
    interp->funcs_sz++;
 
    return 0;
@@ -184,7 +210,6 @@ int16_t interp_set_func_def( struct INTERP* interp, struct ASTREE_NODE* def ) {
 
    return 0;
 }
-#endif
 
 int16_t interp_set_func_cb(
    struct INTERP* interp, const char* func_name, interp_func_cb cb
@@ -192,6 +217,7 @@ int16_t interp_set_func_cb(
    /* TODO: Some kind of wrapper to unstack vars. */
    return 0;
 }
+#endif
 
 int16_t interp_set_var_int(
    struct INTERP* interp, const char* var_name, int16_t value
@@ -273,6 +299,16 @@ struct INTERP_VAR* interp_get_var( struct INTERP* interp, const char* name ) {
    return NULL;
 }
 
+void interp_call_ret( struct INTERP* interp ) {
+   struct INTERP_STACK_ITEM* ret = NULL;
+
+   ret = interp_stack_pop( interp );
+   if( NULL != ret ) {
+      assert( ASTREE_VALUE_TYPE_INT == ret->type );
+      interp->pc = ret->value.i;
+   }
+}
+
 int16_t interp_call_func( struct INTERP* interp, const char* name ) {
    uint32_t i = 0;
    struct INTERP_FUNC* func = NULL;
@@ -293,11 +329,17 @@ int16_t interp_call_func( struct INTERP* interp, const char* name ) {
 
    switch( func->type ) {
    case INTERP_FUNC_CB:
-      /* TODO */
+      assert( NULL != func->exe.cb );
+      func->exe.cb( interp );
+
+      /* Return immediately since callback functions are all in one tick. */
+      interp_call_ret( interp );
       break;
 
    case INTERP_FUNC_PC:
       interp_set_pc( interp, func->exe.pc );
+      
+      /* Call the ret at a dead end if possible. */
       break;
    }
 
@@ -337,11 +379,12 @@ int16_t interp_stack_push_int( struct INTERP* interp, int16_t value ) {
 
 struct INTERP_STACK_ITEM* interp_stack_pop( struct INTERP* interp ) {
 
-   /* Add the new variable. */
+   /* Shrink the stack so the sz == the idx of the old last item. */
    assert( 0 < interp->stack_sz );
    interp->stack_sz--;
 
 #ifdef DEBUG
+   /* Helpful trace messages. */
    switch( interp->stack[interp->stack_sz].type ) {
    case ASTREE_VALUE_TYPE_INT:
       debug_printf( 1, "popping from stack: %d", 
@@ -374,7 +417,14 @@ int16_t interp_tick( struct INTERP* interp ) {
    debug_printf( 1, "executing %d (prev: %d)...", interp->pc, interp->prev_pc );
 
    if( 0 > interp->pc ) {
-      error_printf( "encountered dead end!" );
+      /* Try to return from a function call. */
+      /* TODO: Note that pushing return value on the stack should go before
+       *       ret PC... maybe make return stack its own thing? */
+      interp_call_ret( interp );
+      if( 0 > interp->pc ) {
+         /* Return failed! */
+         error_printf( "encountered dead end!" );
+      }
       return -1;
    }
 
@@ -388,6 +438,8 @@ int16_t interp_tick( struct INTERP* interp ) {
          debug_printf( 1, "descending into if condition..." );
          interp_set_pc( interp, iter->first_child );
       } else {
+         /* If condition is not necessarily a comparison... "if 1:" is valid! */
+
          /* Pop and evaluate. */
          item1 = interp_stack_pop( interp );
          assert( NULL != item1 );
@@ -425,7 +477,8 @@ int16_t interp_tick( struct INTERP* interp ) {
          item2 = interp_stack_pop( interp );
          assert( NULL != item2 );
 
-         /* TODO: Evaluate! */
+         /* Compare item1 and item2. */
+         /* TODO: Fill out this evaluation table for all types. */
          if(
             (ASTREE_VALUE_TYPE_EQ == iter->value_type && (
 
@@ -446,11 +499,14 @@ int16_t interp_tick( struct INTERP* interp ) {
             
             ))
          ) {
+            /* Comparison is TRUE. */
             interp_stack_push_int( interp, 1 );
          } else {
+            /* Comparison is FALSE. */
             interp_stack_push_int( interp, 0 );
          }
 
+         /* All children evaluated, so go back up! */
          debug_printf( 1, "ascending to parent..." );
          interp_set_pc( interp, iter->parent );
 
@@ -471,7 +527,13 @@ int16_t interp_tick( struct INTERP* interp ) {
       case ASTREE_VALUE_TYPE_STRING:
          interp_stack_push_str( interp, iter->value.s );
          break;
+
+      case ASTREE_VALUE_TYPE_FLOAT:
+         /* TODO */
+         break;
       }
+
+      /* Bottom-level, so go back up! */
       debug_printf( 1, "ascending to parent..." );
       interp_set_pc( interp, iter->parent );
       break;
@@ -497,6 +559,8 @@ int16_t interp_tick( struct INTERP* interp ) {
          /* TODO */
          break;
       }
+
+      /* Bottom-level, so go back up! */
       debug_printf( 1, "ascending to parent..." );
       interp_set_pc( interp, iter->parent );
       break;
@@ -509,7 +573,8 @@ int16_t interp_tick( struct INTERP* interp ) {
          /* Defining the function... */
          debug_printf( 1, "defining function: %s", iter->value.s );
          /* interp_set_func_def( interp, iter ); */
-         interp_set_func_pc( interp, iter->value.s, interp->pc );
+         interp_set_func(
+            interp, iter->value.s, &(interp->pc), INTERP_FUNC_PC );
          interp_set_pc( interp, iter->next_sibling );
 
       } else {
@@ -541,32 +606,41 @@ int16_t interp_tick( struct INTERP* interp ) {
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
 
-      if(
-         iter->prev_sibling == interp->prev_pc ||
-         iter->parent == interp->prev_pc
-      ) {
-         /* TODO */
+      debug_printf( 1, "pushing return pc to stack..." );
+      interp_stack_push_int( interp, iter->next_sibling );
+
+      if( interp_is_first_pass( interp, iter ) ) {
+         /* Descend into function variables to push them on the stack. */
          interp_set_pc( interp, iter->first_child );
       } else {
+         /* Call the function with the stack arranged on first pass. */
          interp_call_func( interp, iter->value.s );
       }
-      
       break;
 
    case ASTREE_NODE_TYPE_ASSIGN:
-      /* TODO: Nested assignment. */
       left = astree_node( interp->tree, iter->first_child );
       assert( NULL != left );
       right = astree_node( interp->tree, left->next_sibling );
       assert( NULL != right );
-      if( ASTREE_VALUE_TYPE_INT == right->value_type ) {
+      
+      /* Create a variable with name from left and value from right. */
+      switch( right->value_type ) {
+      case ASTREE_VALUE_TYPE_INT:
          interp_set_var_int( interp, left->value.s, atoi( right->value.s ) );
-      } else if( ASTREE_VALUE_TYPE_STRING == right->value_type ) {
+         break;
+
+      case ASTREE_VALUE_TYPE_STRING:
          interp_set_var_str( interp, left->value.s, right->value.s );
-      } else {
+         break;
+
+      default:
+         /* Invalid value. */
          retval = -1;
          goto cleanup;
       }
+
+      /* TODO: Next instruction or return if end of function. */
       interp_set_pc( interp, iter->next_sibling );
       break;
 
