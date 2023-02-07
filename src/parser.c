@@ -148,9 +148,14 @@ int mpy_parser_insert_node(
    struct MPY_PARSER* parser, uint8_t type, uint8_t value_type
 ) {
    int16_t node_idx = -1;
+   struct ASTREE_NODE* parent = NULL; /* XXX */
 
-   node_idx = astree_node_insert_child_parent(
-      parser->tree, parser->tree_node_idx );
+   parent = astree_node( parser->tree, parser->tree_node_idx );
+
+   debug_printf( 1, "old fc: %d", parent->first_child );
+
+   node_idx = astree_node_insert_as_parent(
+      parser->tree, parent->first_child );
    astree_node( parser->tree, node_idx )->type = type;
    astree_node( parser->tree, node_idx )->value_type = value_type;
    mpy_parser_node_idx( parser, node_idx );

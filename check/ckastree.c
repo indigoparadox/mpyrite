@@ -55,6 +55,49 @@ START_TEST( check_astree_node_add ) {
 }
 END_TEST
 
+START_TEST( check_astree_node_insert ) {
+   int16_t node_id_root = -1,
+      node_id_childr = -1,
+      node_id_childl = -1,
+      node_id_ichildl = -1,
+      node_id_ichildr = -1;
+   struct ASTREE_NODE* iter = NULL;
+
+   node_id_root = astree_node_add_child( &g_tree, 0 );
+   node_id_childl = astree_node_add_child( &g_tree, node_id_root );
+   node_id_childr = astree_node_add_child( &g_tree, node_id_root );
+
+   iter = astree_node( &g_tree, node_id_root );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->parent, 0 );
+   ck_assert_int_eq( iter->first_child, node_id_childl );
+   ck_assert_int_eq( iter->next_sibling, -1 );
+   ck_assert_int_eq( iter->prev_sibling, -1 );
+
+   iter = astree_node( &g_tree, node_id_childr );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->parent, node_id_root );
+   ck_assert_int_eq( iter->prev_sibling, node_id_childl );
+   ck_assert_int_eq( iter->next_sibling, -1 );
+   ck_assert_int_eq( iter->first_child, -1 );
+
+   node_id_ichildr = astree_node_insert_as_parent( &g_tree, node_id_childr );
+   iter = astree_node( &g_tree, node_id_ichildr );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->parent, node_id_root );
+   ck_assert_int_eq( iter->first_child, node_id_childr );
+   ck_assert_int_eq( iter->prev_sibling, node_id_childl );
+   ck_assert_int_eq( iter->next_sibling, -1 );
+
+   iter = astree_node( &g_tree, node_id_childr );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->parent, node_id_ichildr );
+   ck_assert_int_eq( iter->prev_sibling, -1 );
+   ck_assert_int_eq( iter->next_sibling, -1 );
+   ck_assert_int_eq( iter->first_child, -1 );
+}
+END_TEST
+
 static void astree_setup() {
    astree_init( &g_tree );
 }
@@ -73,7 +116,8 @@ Suite* astree_suite( void ) {
    tc_astree = tcase_create( "astree" );
 
    tcase_add_test( tc_astree, check_astree_node_find_free ); 
-   tcase_add_loop_test( tc_astree, check_astree_node_add, 0, 5 ); 
+   tcase_add_loop_test( tc_astree, check_astree_node_add, 0, 5 );
+   tcase_add_test( tc_astree, check_astree_node_insert );
 
    tcase_add_checked_fixture( tc_astree, astree_setup, astree_teardown );
 

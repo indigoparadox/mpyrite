@@ -67,30 +67,49 @@ void astree_node_initialize(
    tree->nodes[node_idx].prev_sibling = -1;
 }
 
-int16_t astree_node_insert_child_parent(
-   struct ASTREE* tree, int16_t parent_idx
-) {
-   int16_t node_idx_out = -1,
-      prev_child_idx = -1;
+int16_t astree_node_insert_as_parent( struct ASTREE* tree, int16_t node_idx ) {
+   int16_t node_idx_out = -1;
+   struct ASTREE_NODE* node_old = NULL,
+      * node_new = NULL,
+      * node_prev_sibling = NULL,
+      * node_next_sibling = NULL,
+      * node_parent = NULL;
 
-   /* Grab the current child list. */
-   prev_child_idx = tree->nodes[parent_idx].first_child;
-   tree->nodes[parent_idx].first_child = -1;
+   node_old = astree_node( tree, node_idx );
+   assert( NULL != node_old );
 
-   /* Replace with the new child and tack the list on to that. */
-   node_idx_out = astree_node_add_child( tree, parent_idx );
+   /* Grab a free node to insert. */
+   node_idx_out = astree_node_find_free( tree );
    if( 0 > node_idx_out ) {
-      /* Problem! Put it back! */
-      tree->nodes[parent_idx].first_child = prev_child_idx;
       goto cleanup;
    }
 
-   debug_printf( 1, "inserting %d between %d and %d...",
-      node_idx_out, parent_idx, prev_child_idx );
+   debug_printf( 1, "inserting %d above %d...", node_idx_out, node_idx );
 
-   tree->nodes[parent_idx].first_child = node_idx_out;
-   tree->nodes[node_idx_out].first_child = prev_child_idx;
-   tree->nodes[prev_child_idx].parent = node_idx_out;
+   node_new = astree_node( tree, node_idx_out );
+   node_new->prev_sibling = node_old->prev_sibling;
+   node_old->prev_sibling = -1;
+   node_new->next_sibling = node_old->next_sibling;
+   node_old->next_sibling = -1;
+   node_new->parent = node_old->parent;
+   node_old->parent = node_idx_out;
+   node_new->first_child = node_idx;
+
+   node_parent = astree_node( tree, node_new->parent );
+   assert( NULL != node_parent );
+   if( node_parent->first_child == node_idx ) {
+      node_parent->first_child = node_idx_out;
+   }
+
+   node_prev_sibling = astree_node( tree, node_new->prev_sibling );
+   if( NULL != node_prev_sibling ) {
+      node_prev_sibling->next_sibling = node_idx_out;
+   }
+
+   node_next_sibling = astree_node( tree, node_new->next_sibling );
+   if( NULL != node_next_sibling ) {
+      node_next_sibling->prev_sibling = node_idx_out;
+   }
 
 cleanup:
 
