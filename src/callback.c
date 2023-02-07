@@ -35,26 +35,39 @@ int16_t mpy_rect( struct INTERP* interp ) {
       w = 0,
       h = 0,
       c = 0;
+   RETROFLAT_COLOR color;
 
    item = interp_stack_pop( interp );
    assert( NULL != item );
+   h = item->value.i;
 
    item = interp_stack_pop( interp );
    assert( NULL != item );
+   w = item->value.i;
 
    item = interp_stack_pop( interp );
    assert( NULL != item );
+   y = item->value.i;
 
    item = interp_stack_pop( interp );
    assert( NULL != item );
+   x = item->value.i;
 
    item = interp_stack_pop( interp );
    assert( NULL != item );
+   c = item->value.i;
 
-   retroflat_rect(
-      NULL, RETROFLAT_COLOR_BLACK, 0, 0,
-      retroflat_screen_w(), retroflat_screen_h(),
-      RETROFLAT_FLAGS_FILL );
+   /* TODO: Color LUT. */
+   switch( c ) {
+   case 2:
+      color = RETROFLAT_COLOR_RED;
+      break;
+   default:
+      color = RETROFLAT_COLOR_BLACK;
+      break;
+   }
+
+   retroflat_rect( NULL, color, x, y, w, h, RETROFLAT_FLAGS_FILL );
 
    return 0;
 }

@@ -435,6 +435,7 @@ int16_t interp_tick( struct INTERP* interp ) {
    assert( NULL != iter );
 
    switch( iter->type ) {
+   case ASTREE_NODE_TYPE_WHILE:
    case ASTREE_NODE_TYPE_IF:
       if( interp->prev_pc != iter->first_child ) {
          /* Need to get the result onto the stack! */
@@ -460,6 +461,27 @@ int16_t interp_tick( struct INTERP* interp ) {
             debug_printf( 1, "if condition FALSE" );
             interp_set_pc( interp, iter->next_sibling );
          }
+      }
+      break;
+
+   case ASTREE_NODE_TYPE_SEQ_TERM:
+      /* Check the sequence parent to figure out what to do next. */
+      /* TODO: Integrate function closure return hoop-jumping into this. */
+      left = astree_node( interp->tree, iter->value.i );
+      assert( NULL != left );
+      right = astree_node( interp->tree, left->parent );
+      assert( NULL != left ); /* TODO: This won't hold for root seq. */
+      switch( right->type ) {
+      case ASTREE_NODE_TYPE_WHILE:
+         debug_printf( 1, "while sequence termination, return to: %d",
+            iter->value.i );
+         interp_set_pc( interp, left->parent );
+         break;
+      default:
+         /* Just go to (presumably -1) child so handler above can handle it. */
+         /* TODO: Integrate that handler here. */
+         interp_set_pc( interp, iter->first_child );
+         break;
       }
       break;
 
