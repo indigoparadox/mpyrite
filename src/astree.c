@@ -144,6 +144,12 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
          "\t%d: (idx: %d) sequence node", depth, node_idx );
       break;
 
+   case ASTREE_NODE_TYPE_SEQ_TERM:
+      debug_printf( ASTREE_DUMP_DEBUG_LVL,
+         "\t%d: (idx: %d) sequence term node: %d", depth, node_idx,
+         tree->nodes[node_idx].value.i );
+      break;
+
    case ASTREE_NODE_TYPE_FUNC_DEF:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
          "\t%d: (idx: %d) function def node: %s", depth, node_idx,

@@ -46,5 +46,5 @@ $(eval $(call TGTWIN386,mpyrit))
 # Clean
 
 clean:
-	rm -rf $(CLEAN_TARGETS)
+	rm -rf $(CLEAN_TARGETS) mpyrite.check
 

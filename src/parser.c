@@ -367,6 +367,9 @@ int mpy_parser_append_token( struct MPY_PARSER* parser, char c ) {
 
 void mpy_parser_check_indent( struct MPY_PARSER* parser, char c ) {
    int indent_diff = 0;
+   struct ASTREE_NODE* iter = NULL,
+      * iter_parent = NULL;
+   int16_t term_node_idx = -1;
 
    if( parser->inside_indent && ' ' != c ) {
       parser->inside_indent = 0;
@@ -387,15 +390,42 @@ void mpy_parser_check_indent( struct MPY_PARSER* parser, char c ) {
                "line %d: rewinding up from indent %d to indent %d",
                parser->line_num,
                indent_diff, indent_diff - parser->indent_divisor );
+
+            iter = astree_node( parser->tree, parser->tree_node_idx );
+            assert( NULL != iter );
+            iter_parent = astree_node( parser->tree, iter->parent );
+            assert( NULL != iter_parent );
             do {
+
+               /* We need to test whether the next sibling is -1 here, because
+                * we're walking back up and this is the node that was last
+                * traversed.
+                */
+               if(
+                  NULL != iter &&
+                  ASTREE_NODE_TYPE_SEQUENCE == iter->type &&
+                  0 > iter->next_sibling
+               ) {
+                  /* Add sequence terminator. */
+                  term_node_idx = astree_node_add_child(
+                     parser->tree, parser->tree_node_idx );
+                  debug_printf( 1, "adding seq term node %d", term_node_idx );
+                  astree_node( parser->tree, term_node_idx )->type =
+                     ASTREE_NODE_TYPE_SEQ_TERM;
+                  astree_node( parser->tree, term_node_idx )->value.i =
+                     parser->tree_node_idx;
+               }
+
                /* Do this loop at least once to get out of current sequence. */
                mpy_parser_node_idx( parser,
                   parser->tree->nodes[parser->tree_node_idx].parent );
                assert( 0 <= parser->tree_node_idx );
-            } while(
-               ASTREE_NODE_TYPE_SEQUENCE !=
-               parser->tree->nodes[parser->tree_node_idx].type
-            );
+               iter = astree_node( parser->tree, parser->tree_node_idx );
+               assert( NULL != iter );
+               iter_parent = astree_node( parser->tree, iter->parent );
+
+            } while( ASTREE_NODE_TYPE_SEQUENCE != iter->type );
+
             indent_diff -= parser->indent_divisor;
             debug_printf( 1, "active node index is now: %d",
                parser->tree_node_idx );
