@@ -531,9 +531,14 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
-      } else {
+      } else if(
+         MPY_PARSER_STATE_IF_COND == parser->state ||
+         MPY_PARSER_STATE_WHILE_COND == parser->state
+      ) {
          retval = mpy_parser_insert_node(
             parser, ASTREE_NODE_TYPE_COND, ASTREE_VALUE_TYPE_GT );
+      } else {
+         retval = -1;
       }
       break;
 
@@ -562,10 +567,19 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
-      } else {
+      } else if(
+         MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->state
+      ) {
          retval = mpy_parser_parse_token( parser, c );
          retval = mpy_parser_insert_node(
             parser, ASTREE_NODE_TYPE_OP, ASTREE_VALUE_TYPE_ADD );
+      } else if(
+         MPY_PARSER_STATE_ASSIGN == parser->state
+      ) {
+
+         /* TODO */
+      } else {
+         retval = -1;
       }
       break;
 

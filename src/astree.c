@@ -60,6 +60,7 @@ int16_t astree_node_find_free( struct ASTREE* tree ) {
 void astree_node_initialize(
    struct ASTREE* tree, int16_t node_idx, int16_t parent_idx
 ) {
+   assert( parent_idx != node_idx );
    tree->nodes[node_idx].parent = parent_idx;
    tree->nodes[node_idx].active = 1;
    tree->nodes[node_idx].first_child = -1;
@@ -86,12 +87,13 @@ int16_t astree_node_insert_as_parent( struct ASTREE* tree, int16_t node_idx ) {
 
    debug_printf( 1, "inserting %d above %d...", node_idx_out, node_idx );
 
+   astree_node_initialize( tree, node_idx_out, node_old->parent );
    node_new = astree_node( tree, node_idx_out );
+
    node_new->prev_sibling = node_old->prev_sibling;
    node_old->prev_sibling = -1;
    node_new->next_sibling = node_old->next_sibling;
    node_old->next_sibling = -1;
-   node_new->parent = node_old->parent;
    node_old->parent = node_idx_out;
    node_new->first_child = node_idx;
 
@@ -100,6 +102,9 @@ int16_t astree_node_insert_as_parent( struct ASTREE* tree, int16_t node_idx ) {
    if( node_parent->first_child == node_idx ) {
       node_parent->first_child = node_idx_out;
    }
+
+   assert( node_new->parent != node_idx_out );
+   assert( node_old->parent != node_idx );
 
    node_prev_sibling = astree_node( tree, node_new->prev_sibling );
    if( NULL != node_prev_sibling ) {
