@@ -8,11 +8,11 @@ include maug/Makefile.inc
 # Target-specific options.
 .PHONY: clean
 
-all: mpy.ale mpy.sdl mpyd.exe mpyw.exe mpynt.exe mpy.html
+all: mpyrit.ale mpyrit.sdl mpyritd.exe mpyritw.exe mpyritnt.exe mpyrit.html
 
 CHECK_C_FILES=check/check.c check/ckparser.c src/parser.c src/astree.c check/ckastree.c src/interp.c
 
-mpy.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
+mpyrit.check: $(addprefix obj/check/,$(subst .c,.o,$(CHECK_C_FILES)))
 	gcc -g -o $@ $^ $(shell pkg-config check --libs)
 
 obj/check/%.o: %.c
@@ -21,27 +21,27 @@ obj/check/%.o: %.c
 
 # Unix (Allegro)
 
-$(eval $(call TGTUNIXALE,mpy))
+$(eval $(call TGTUNIXALE,mpyrit))
 
 # Unix (SDL)
 
-$(eval $(call TGTUNIXSDL,mpy))
+$(eval $(call TGTUNIXSDL,mpyrit))
 
 # WASM
 
-$(eval $(call TGTWASMSDL,mpy))
+$(eval $(call TGTWASMSDL,mpyrit))
 
 # DOS
 
-$(eval $(call TGTDOSALE,mpy))
+$(eval $(call TGTDOSALE,mpyrit))
 
 # WinNT
 
-$(eval $(call TGTWINNT,mpy))
+$(eval $(call TGTWINNT,mpyrit))
 
 # Win386
 
-$(eval $(call TGTWIN386,mpy))
+$(eval $(call TGTWIN386,mpyrit))
 
 # Clean
 
