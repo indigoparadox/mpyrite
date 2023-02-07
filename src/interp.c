@@ -307,7 +307,7 @@ void interp_call_ret( struct INTERP* interp ) {
    ret = interp_stack_pop( interp );
    if( NULL != ret ) {
       assert( ASTREE_VALUE_TYPE_INT == ret->type );
-      interp->pc = ret->value.i;
+      interp_set_pc( interp, ret->value.i );
    }
 }
 
@@ -634,6 +634,9 @@ int16_t interp_tick( struct INTERP* interp ) {
    case ASTREE_NODE_TYPE_FUNC_CALL:
 
       if( interp_is_first_pass( interp, iter ) ) {
+         debug_printf( 1, "function call first pass for: %s()",
+            iter->value.s );
+
          /* Push the return PC before we parse potential args so it's below
           * them on the stack.
           */
@@ -656,25 +659,28 @@ int16_t interp_tick( struct INTERP* interp ) {
          /* We're coming back from parsing an arg, so we know we have at least
           * one child node.
           */
-         /*item1 = interp_stack_pop( interp ); */
-         
          left = astree_node( interp->tree, iter->first_child );
          assert( NULL != left );
          if( interp->prev_pc != iter->first_child ) {
             /* We haven't returned from the first child, so it must be a
              * subsequent sibling!
              */
-            debug_printf( 1, "XXX prev %d vs fc %d", interp->prev_pc, iter->first_child );
+            debug_printf( 1,
+               "previous pc: %d, iter node first child: %d",
+               interp->prev_pc, iter->first_child );
             debug_printf( 1, "left ns: %d", left->next_sibling );
             while( NULL != left && interp->prev_pc != left->next_sibling ) {
-               debug_printf( 1, "paging arg to %d...", left->next_sibling );
+               assert( NULL != left );
+               debug_printf( 1, "paging arg to %d (looking for %d)...",
+                  left->next_sibling, interp->prev_pc );
                left = astree_node( interp->tree, left->next_sibling );
             }
 
             /* Left should now be the arg before the last parsed. */
+            assert( NULL != left );
             left = astree_node( interp->tree, left->next_sibling );
             /* Now it should be the last parsed. */
-            debug_printf( 1, "left ns: %d", left->next_sibling );
+            debug_printf( 1, "left node next sibling: %d", left->next_sibling );
          }
 
          if( NULL != left && 0 <= left->next_sibling ) {
