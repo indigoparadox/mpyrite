@@ -33,7 +33,7 @@ const char test_buffer_func_call[] = "rect( \"red\", 0, 0, 320, 200 )";
 const char test_buffer_func_call_mult[] =
    "lock()\n" \
    "rect( \"red\", 0, 0, 320, 200 )\n" \
-   "rect( 0, 0, \"blue\" )\n" \
+   "little_rect( 0, 0, \"blue\" )\n" \
    "print( \"hello!\" )\n" \
    "release()\n";
 
@@ -43,7 +43,7 @@ START_TEST( check_parser_func_call ) {
    
    retval = parser_parse_buffer(
       &g_parser, &g_tree, test_buffer_func_call,
-      strlen( test_buffer_func_def ) );
+      strlen( test_buffer_func_call ) );
    ck_assert_int_eq( retval, 0 );
 
    astree_dump( &g_tree, 0, 0 );
@@ -78,6 +78,80 @@ START_TEST( check_parser_func_call ) {
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
 
    /* 200 ) */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+}
+END_TEST
+
+START_TEST( check_parser_func_call_mult ) {
+   struct ASTREE_NODE* iter = NULL;
+   int16_t retval = 0;
+   
+   retval = parser_parse_buffer(
+      &g_parser, &g_tree, test_buffer_func_call_mult,
+      strlen( test_buffer_func_call_mult ) );
+   ck_assert_int_eq( retval, 0 );
+
+   astree_dump( &g_tree, 0, 0 );
+
+   iter = astree_node( &g_tree, 0 );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+   /* lock() */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_CALL );
+
+   /* rect( */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_CALL );
+
+   /* "red", */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* 0, */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* 0, */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* 320, */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* 200 ) */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* little_rect( */
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_CALL );
+
+   /* 0, */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* 0, */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* "blue", */
    iter = astree_node( &g_tree, iter->next_sibling );
    ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
@@ -360,6 +434,7 @@ Suite* parser_suite( void ) {
    /* Core test case */
    tc_parser = tcase_create( "parser" );
 
+   tcase_add_test( tc_parser, check_parser_func_call_mult );
    tcase_add_test( tc_parser, check_parser_func_call );
    tcase_add_test( tc_parser, check_parser_func_def_mult ); 
    tcase_add_test( tc_parser, check_parser_func_def ); 

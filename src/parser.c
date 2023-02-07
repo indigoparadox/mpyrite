@@ -276,35 +276,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       mpy_parser_reset_after_var( parser );
 
       if( ')' == trig_c ) { 
-         /* This is the prev param. */
-         mpy_parser_state( parser, MPY_PARSER_STATE_NONE )
-
-         debug_printf( 1, "closing func parms after %d",
-            parser->tree_node_idx );
-
-         /* Rewind up past any conds or ops. */
-         while(
-            ASTREE_NODE_TYPE_OP ==
-               astree_node( parser->tree, parser->tree_node_idx )->type ||
-            ASTREE_NODE_TYPE_COND ==
-               astree_node( parser->tree, parser->tree_node_idx )->type
-         ) {
-            /* Rewind */
-            mpy_parser_node_idx( parser,
-               parser->tree->nodes[parser->tree_node_idx].parent );
-            assert( 0 <= parser->tree_node_idx );
-         }
-
-         /* XXX */
-         if(
-            ASTREE_NODE_TYPE_FUNC_CALL ==
-            astree_node( parser->tree, parser->tree_node_idx )->type
-         ) {
-            /* This is a call, not a def. No sequence to follow parms. */
-            debug_printf( 1, "function params done; rewinding up to sequence" );
-            mpy_parser_rewind( parser, ASTREE_NODE_TYPE_SEQUENCE );
-         }
-
+         
       }
       goto cleanup;
 
@@ -487,7 +459,10 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       ) {
          /* Add to string. */
          retval = mpy_parser_append_token( parser, c );
-      } else if( MPY_PARSER_STATE_VAR == parser->state ) {
+      } else if(
+         MPY_PARSER_STATE_VAR == parser->state ||
+         MPY_PARSER_STATE_NUM == parser->state
+      ) {
          /* Might be a statement (or empty, but parse_token() will filter). */
          retval = mpy_parser_parse_token( parser, c );
       } else {
@@ -649,6 +624,8 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
          retval = mpy_parser_parse_token( parser, c );
       } else if( MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->state ) {
          /* End function parms. */
+         debug_printf( 1,
+            "function call params done; tree_idx: %d", parser->tree_node_idx );
          retval = mpy_parser_parse_token( parser, c );
          mpy_parser_state( parser, MPY_PARSER_STATE_NONE );
           
@@ -663,9 +640,10 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
       } else {
-         /* XXX */
-         /* Just a normal char. */
-         retval = mpy_parser_append_token( parser, c );
+         debug_printf( 1, "odd ')'? state: %s",
+            gc_mpy_parser_state_tokens[parser->state] );
+         retval = mpy_parser_parse_token( parser, c );
+         mpy_parser_state( parser, MPY_PARSER_STATE_NONE );
       }
       break;
 
