@@ -15,6 +15,7 @@
 #define ASTREE_NODE_TYPE_OP            9
 #define ASTREE_NODE_TYPE_ASSIGN        10
 #define ASTREE_NODE_TYPE_FUNC_DEF_PARM 11
+#define ASTREE_NODE_TYPE_WHILE         12
 
 #define ASTREE_VALUE_TYPE_NONE      0
 #define ASTREE_VALUE_TYPE_INT       1

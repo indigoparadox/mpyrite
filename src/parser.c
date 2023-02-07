@@ -50,6 +50,19 @@ int mpy_parser_add_node_if( struct MPY_PARSER* parser ) {
    return 0;
 }
 
+int mpy_parser_add_node_while( struct MPY_PARSER* parser ) {
+   int16_t while_node_idx = -1;
+
+   while_node_idx = 
+      astree_node_add_child( parser->tree, parser->tree_node_idx );
+   debug_printf( 1, "adding node %d: while", while_node_idx );
+   astree_node( parser->tree, while_node_idx )->type = ASTREE_NODE_TYPE_WHILE;
+   mpy_parser_node_idx( parser, while_node_idx );
+   mpy_parser_state( parser, MPY_PARSER_STATE_WHILE_COND )
+
+   return 0;
+}
+
 #  define MPY_PARSER_STATEMENTS_ADD_CBS( token, type, add_cb ) add_cb,
 
 mpy_parser_add_cb g_mpy_parser_add_cbs[] = {
@@ -165,6 +178,12 @@ void mpy_parser_reset_after_var( struct MPY_PARSER* parser ) {
       debug_printf( 1, "auto-resetting to if condition state" );
       mpy_parser_state( parser, MPY_PARSER_STATE_IF_COND )
    } else if(
+      ASTREE_NODE_TYPE_WHILE ==
+         astree_node( parser->tree, parser->tree_node_idx )->type
+   ) {
+      debug_printf( 1, "auto-resetting to while condition state" );
+      mpy_parser_state( parser, MPY_PARSER_STATE_WHILE_COND )
+   } else if(
       ASTREE_NODE_TYPE_ASSIGN ==
          astree_node( parser->tree, parser->tree_node_idx )->type
    ) {
@@ -244,6 +263,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
       MPY_PARSER_STATE_FUNC_DEF_PARMS == parser->prev_state ||
       MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->prev_state ||
       MPY_PARSER_STATE_IF_COND == parser->prev_state ||
+      MPY_PARSER_STATE_WHILE_COND == parser->prev_state ||
       (MPY_PARSER_STATE_ASSIGN == parser->prev_state && (
          MPY_PARSER_STATE_STRING == parser->state ||
          MPY_PARSER_STATE_STRING_SQ == parser->state ||
@@ -274,10 +294,6 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
                ASTREE_NODE_TYPE_FUNC_DEF_PARM : ASTREE_NODE_TYPE_VARIABLE );
       }
       mpy_parser_reset_after_var( parser );
-
-      if( ')' == trig_c ) { 
-         
-      }
       goto cleanup;
 
    } else if(
@@ -330,6 +346,7 @@ int mpy_parser_append_token( struct MPY_PARSER* parser, char c ) {
    if(
       1 == parser->token_sz && (
       MPY_PARSER_STATE_IF_COND == parser->state ||
+      MPY_PARSER_STATE_WHILE_COND == parser->state ||
       MPY_PARSER_STATE_FUNC_DEF_PARMS == parser->state ||
       MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->state ||
       MPY_PARSER_STATE_ASSIGN == parser->state ||
@@ -536,7 +553,18 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
             parser, ASTREE_NODE_TYPE_COND, ASTREE_VALUE_TYPE_EQ );
          mpy_parser_state( parser, MPY_PARSER_STATE_IF_COND );
 
-      } else if( MPY_PARSER_STATE_IF_COND == parser->state ) {
+      } else if(
+         MPY_PARSER_STATE_WHILE_COND == parser->prev_state &&
+         MPY_PARSER_STATE_EQ_SIGN == parser->state
+      ) {
+         retval = mpy_parser_insert_node(
+            parser, ASTREE_NODE_TYPE_COND, ASTREE_VALUE_TYPE_EQ );
+         mpy_parser_state( parser, MPY_PARSER_STATE_WHILE_COND );
+
+      } else if(
+         MPY_PARSER_STATE_IF_COND == parser->state ||
+         MPY_PARSER_STATE_WHILE_COND == parser->state
+      ) {
          mpy_parser_state( parser, MPY_PARSER_STATE_EQ_SIGN );
 
       } else if( MPY_PARSER_STATE_VAR == parser->state ) {
@@ -555,6 +583,18 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
          gc_mpy_parser_state_tokens[parser->state], parser->state );
       if( MPY_PARSER_STATE_COMMENT == parser->state ) {
          /* Do nothing. */
+
+      } else if(
+         MPY_PARSER_STATE_WHILE_COND == parser->state ||
+         MPY_PARSER_STATE_WHILE_COND == parser->prev_state
+      ) {
+         retval = mpy_parser_parse_token( parser, c );
+
+         /* Start while statement body. */
+         debug_printf( 1, "conditions done; rewinding up to while statement" );
+         mpy_parser_rewind( parser, ASTREE_NODE_TYPE_WHILE );
+         mpy_parser_state( parser, MPY_PARSER_STATE_NONE )
+         retval = mpy_parser_add_node_sequence( parser );
 
       } else if(
          MPY_PARSER_STATE_IF_COND == parser->state ||

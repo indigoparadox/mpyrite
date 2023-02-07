@@ -17,7 +17,8 @@
    f( MPY_PARSER_STATE_ASSIGN,            9  ) \
    f( MPY_PARSER_STATE_EQ_SIGN,           10 ) \
    f( MPY_PARSER_STATE_VAR,               11 ) \
-   f( MPY_PARSER_STATE_FUNC_CALL_PARMS,   12 )
+   f( MPY_PARSER_STATE_FUNC_CALL_PARMS,   12 ) \
+   f( MPY_PARSER_STATE_WHILE_COND,        13 )
 
 #define mpy_parser_state( parser, new_state ) \
    debug_printf( 1, "new state: %s (prev: %s)", \
@@ -57,7 +58,8 @@ int parser_parse_buffer(
 
 #define MPY_PARSER_STATEMENTS( f ) \
    f( "def", ASTREE_NODE_TYPE_FUNC_DEF, mpy_parser_add_node_def ) \
-   f( "if", ASTREE_NODE_TYPE_IF, mpy_parser_add_node_if )
+   f( "if", ASTREE_NODE_TYPE_IF, mpy_parser_add_node_if ) \
+   f( "while", ASTREE_NODE_TYPE_WHILE, mpy_parser_add_node_while )
 
 #ifdef PARSER_C
 

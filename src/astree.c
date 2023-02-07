@@ -161,6 +161,11 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
          "\t%d: (idx: %d) if node", depth, node_idx );
       break;
 
+   case ASTREE_NODE_TYPE_WHILE:
+      debug_printf( ASTREE_DUMP_DEBUG_LVL, 
+         "\t%d: (idx: %d) while node", depth, node_idx );
+      break;
+
    case ASTREE_NODE_TYPE_LITERAL:
       switch( tree->nodes[node_idx].value_type ) {
       case ASTREE_VALUE_TYPE_NONE:
