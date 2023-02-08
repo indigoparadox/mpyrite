@@ -23,9 +23,9 @@ const char test_buffer_a[] =
    "    main( 123, \"test\" )\n" \
    "\n";
 
-const char test_buffer_assign_op[] = "x = x + 1\n";
+const char test_buffer_assign_op[] = "plusop = plusop + 1\n";
 
-const char test_buffer_while[] = "while 1:\n    x = x + 1\n";
+const char test_buffer_while[] = "while 1:\n    whileplus = whileplus + 3\n";
 
 const char test_buffer_func_def[] = "def main( foo ):\n";
 
@@ -338,16 +338,48 @@ START_TEST( check_parser_while ) {
    astree_dump( &g_tree, 0, 0 );
 
    iter = astree_node( &g_tree, 0 );
+   ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
 
    /* while */
    iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_WHILE );
 
-   /* 1: */
+   /* 1 */
    iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
 
+   /* : */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+   /* = */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_ASSIGN );
+
+   /* whileplus */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* + */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_OP );
+
+   /* whileplus */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* 3 */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
 }
 END_TEST
 
