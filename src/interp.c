@@ -407,7 +407,6 @@ int16_t interp_tick( struct INTERP* interp ) {
    struct ASTREE_NODE* left = NULL;
    struct ASTREE_NODE* right = NULL;
    struct ASTREE_NODE* iter = NULL;
-   int16_t seq = 0;
    int16_t retval = 0;
    struct INTERP_VAR* var = NULL;
    struct INTERP_STACK_ITEM* item1 = NULL,
@@ -722,27 +721,63 @@ int16_t interp_tick( struct INTERP* interp ) {
       right = astree_node( interp->tree, left->next_sibling );
       assert( NULL != right );
 
-      /* TODO: Descend into right and evaluate it on next tick. */
+      if( interp_is_first_pass( interp, iter ) ) {
+         /* Descend into right and evaluate it on next tick. */
+         debug_printf( 1, "descending into assignment..." );
+         interp_set_pc( interp, left->next_sibling );
       
-      /* Create a variable with name from left and value from right. */
-      switch( right->value_type ) {
-      case ASTREE_VALUE_TYPE_INT:
-         interp_set_var_int( interp, left->value.s, atoi( right->value.s ) );
-         break;
+      } else if( interp->prev_pc == left->next_sibling ) {
+         debug_printf( 1, "assignining from stack..." );
 
-      case ASTREE_VALUE_TYPE_STRING:
-         interp_set_var_str( interp, left->value.s, right->value.s );
-         break;
+         /* Create a variable with name from left and value from right. */
+         item1 = interp_stack_pop( interp );
+         switch( item1->type ) {
+         case ASTREE_VALUE_TYPE_INT:
+            interp_set_var_int( interp, left->value.s, item1->value.i );
+            break;
 
-      default:
-         /* Invalid value. */
-         error_printf( "invalid value type: %d", iter->value_type );
-         retval = -1;
-         goto cleanup;
+         case ASTREE_VALUE_TYPE_STRING:
+            interp_set_var_str( interp, left->value.s, item1->value.s );
+            break;
+
+         default:
+            /* Invalid value. */
+            error_printf( "invalid value type: %d", iter->value_type );
+            retval = -1;
+            goto cleanup;
+         }
+
+         interp_set_pc( interp, iter->next_sibling );
       }
+      break;
 
-      /* TODO: Next instruction or return if end of function. */
-      interp_set_pc( interp, iter->next_sibling );
+   case ASTREE_NODE_TYPE_OP:
+      left = astree_node( interp->tree, iter->first_child );
+      assert( NULL != left );
+      right = astree_node( interp->tree, left->next_sibling );
+      assert( NULL != right );
+
+      if( interp_is_first_pass( interp, iter ) ) {
+         /* Put left node on the stack. */
+         debug_printf( 1, "descending into left node..." );
+         interp_set_pc( interp, iter->first_child );
+      
+      } else if( interp->prev_pc == iter->first_child ) {
+         /* Put right node on the stack. */
+         debug_printf( 1, "descending into right node..." );
+         interp_set_pc( interp, left->next_sibling );
+
+      } else if( interp->prev_pc == left->next_sibling ) {
+         /* Perform op and return to parent! */
+         item1 = interp_stack_pop( interp );
+         item2 = interp_stack_pop( interp );
+
+         /* TODO: Handle different types! */
+         interp_stack_push_int( interp, item1->value.i + item2->value.i );
+
+         debug_printf( 1, "ascending to parent..." );
+         interp_set_pc( interp, iter->parent );
+      }
       break;
 
    default:
