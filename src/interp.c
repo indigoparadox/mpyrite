@@ -734,6 +734,7 @@ int16_t interp_tick( struct INTERP* interp ) {
 
       default:
          /* Invalid value. */
+         error_printf( "invalid instruction: %d", iter->type );
          retval = -1;
          goto cleanup;
       }

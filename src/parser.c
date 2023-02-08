@@ -41,6 +41,14 @@ int mpy_parser_add_node_def( struct MPY_PARSER* parser ) {
 int mpy_parser_add_node_if( struct MPY_PARSER* parser ) {
    int16_t if_node_idx = -1;
 
+   assert( NULL != astree_node( parser->tree, parser->tree_node_idx ) );
+   assert( ASTREE_NODE_TYPE_ASSIGN !=
+      astree_node( parser->tree, parser->tree_node_idx )->type );
+   assert( ASTREE_NODE_TYPE_OP !=
+      astree_node( parser->tree, parser->tree_node_idx )->type );
+   assert( ASTREE_NODE_TYPE_LITERAL !=
+      astree_node( parser->tree, parser->tree_node_idx )->type );
+
    if_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
    debug_printf( 1, "adding node %d: if", if_node_idx );
    astree_node( parser->tree, if_node_idx )->type = ASTREE_NODE_TYPE_IF;
@@ -333,6 +341,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    } else if(
       (MPY_PARSER_STATE_VAR == parser->state && '(' == trig_c)
    ) {
+      /* TODO: Assert valid conditions. */
       retval = mpy_parser_add_node_call( parser, parser->token );
    }
 
@@ -508,17 +517,17 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
          /* mpy_parser_reset_after_var( parser ); */
          mpy_parser_state( parser, MPY_PARSER_STATE_NONE );
       } else {
+         retval = mpy_parser_parse_token( parser, c );
          if(
-            MPY_PARSER_STATE_ASSIGN == parser->state /* ||
-            MPY_PARSER_STATE_ASSIGN == parser->prev_state */
+            MPY_PARSER_STATE_ASSIGN == parser->state ||
+            (MPY_PARSER_STATE_ASSIGN == parser->prev_state && (
+               MPY_PARSER_STATE_NUM == parser->state
+            ))
          ) {
             mpy_parser_state( parser, MPY_PARSER_STATE_NONE );
-            
             debug_printf( 1, "assign done; rewinding up to sequence" );
             mpy_parser_rewind( parser, ASTREE_NODE_TYPE_SEQUENCE );
          }
-         retval = mpy_parser_parse_token( parser, c );
-         mpy_parser_state( parser, MPY_PARSER_STATE_NONE );
          parser->prev_line_indent = parser->this_line_indent;
          parser->this_line_indent = 0;
          parser->inside_indent = 1;
