@@ -258,8 +258,10 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
 
    case ASTREE_NODE_TYPE_FUNC_DEF_PARM:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) function def parm node: %s",
-         depth, node_idx, tree->nodes[node_idx].value.s );
+         "\t%d: (idx: %d) function def parm node: %s (< %d, > %d)",
+         depth, node_idx, tree->nodes[node_idx].value.s,
+         astree_node( tree, node_idx )->prev_sibling, 
+         astree_node( tree, node_idx )->next_sibling );
       break;
 
 #if 0

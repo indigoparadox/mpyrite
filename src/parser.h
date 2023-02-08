@@ -27,6 +27,14 @@
    parser->prev_state = parser->state; \
    parser->state = new_state;
 
+#define mpy_parser_state_reset( parser ) \
+   debug_printf( 1, "resetting state %s to prev: %s", \
+      gc_mpy_parser_state_tokens[parser->state], \
+      gc_mpy_parser_state_tokens[parser->prev_state] ); \
+   parser->state -= parser->prev_state; \
+   parser->prev_state += parser->state; \
+   parser->state = parser->prev_state - parser->state;
+
 #define mpy_parser_node_idx( parser, new_idx ) \
    debug_printf( 1, "new node idx: %d (prev: %d)", \
       new_idx, parser->tree_node_idx ); \
