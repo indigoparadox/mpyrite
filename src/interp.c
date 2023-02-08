@@ -721,6 +721,8 @@ int16_t interp_tick( struct INTERP* interp ) {
       assert( NULL != left );
       right = astree_node( interp->tree, left->next_sibling );
       assert( NULL != right );
+
+      /* TODO: Descend into right and evaluate it on next tick. */
       
       /* Create a variable with name from left and value from right. */
       switch( right->value_type ) {
@@ -734,7 +736,7 @@ int16_t interp_tick( struct INTERP* interp ) {
 
       default:
          /* Invalid value. */
-         error_printf( "invalid instruction: %d", iter->type );
+         error_printf( "invalid value type: %d", iter->value_type );
          retval = -1;
          goto cleanup;
       }

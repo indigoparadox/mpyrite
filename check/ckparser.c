@@ -28,6 +28,8 @@ const char test_buffer_assign_op[] = "plusop = plusop + 1\n";
 
 const char test_buffer_while[] = "while 1:\n    whileplus = whileplus + 3\n";
 
+const char test_buffer_while_gt[] = "while 3 > whilegt:\n    whilegt = whilegt + 1\n";
+
 const char test_buffer_func_def[] = "def main( foo ):\n";
 
 const char test_buffer_func_def_mult[] = "def main( foo, fii, faa ):\n";
@@ -384,6 +386,75 @@ START_TEST( check_parser_while ) {
 }
 END_TEST
 
+START_TEST( check_parser_while_gt ) {
+   struct ASTREE_NODE* iter = NULL;
+   int16_t retval = 0;
+   
+   retval = parser_parse_buffer(
+      &g_parser, &g_tree, test_buffer_while_gt,
+      strlen( test_buffer_while_gt ) );
+   ck_assert_int_eq( retval, 0 );
+
+   astree_dump( &g_tree, 0, 0 );
+
+   iter = astree_node( &g_tree, 0 );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+   /* while */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_WHILE );
+
+   /* > */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_COND );
+
+   /* 3 */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+
+   /* whilegt */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* : */
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+   /* = */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_ASSIGN );
+
+   /* whilegt */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* + */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_OP );
+
+   /* whilegt */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* 1 */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
+}
+END_TEST
+
 START_TEST( check_parser_assign_op ) {
    struct ASTREE_NODE* iter = NULL;
    int16_t retval = 0;
@@ -651,6 +722,7 @@ Suite* parser_suite( void ) {
    tcase_add_test( tc_func, check_parser_func_def ); 
    tcase_add_test( tc_assign, check_parser_assign ); 
    tcase_add_test( tc_control, check_parser_while );
+   tcase_add_test( tc_control, check_parser_while_gt );
    tcase_add_test( tc_assign, check_parser_assign_op );
    tcase_add_test( tc_integ, check_parser_a ); 
 

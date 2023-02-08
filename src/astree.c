@@ -229,6 +229,11 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
             "\t%d: (idx: %d) cond node: greater than", depth, node_idx );
          break;
 
+      case ASTREE_VALUE_TYPE_LT:
+         debug_printf( ASTREE_DUMP_DEBUG_LVL,
+            "\t%d: (idx: %d) cond node: less than", depth, node_idx );
+         break;
+
       case ASTREE_VALUE_TYPE_EQ:
          debug_printf( ASTREE_DUMP_DEBUG_LVL,
             "\t%d: (idx: %d) cond node: equal to", depth, node_idx );
@@ -241,6 +246,26 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
       case ASTREE_VALUE_TYPE_ADD:
          debug_printf( ASTREE_DUMP_DEBUG_LVL,
             "\t%d: (idx: %d) op node: add", depth, node_idx );
+         break;
+
+      case ASTREE_VALUE_TYPE_SUBTRACT:
+         debug_printf( ASTREE_DUMP_DEBUG_LVL,
+            "\t%d: (idx: %d) op node: subtract", depth, node_idx );
+         break;
+
+      case ASTREE_VALUE_TYPE_MULTIPLY:
+         debug_printf( ASTREE_DUMP_DEBUG_LVL,
+            "\t%d: (idx: %d) op node: multiply", depth, node_idx );
+         break;
+
+      case ASTREE_VALUE_TYPE_DIVIDE:
+         debug_printf( ASTREE_DUMP_DEBUG_LVL,
+            "\t%d: (idx: %d) op node: divide", depth, node_idx );
+         break;
+
+      case ASTREE_VALUE_TYPE_MODULO:
+         debug_printf( ASTREE_DUMP_DEBUG_LVL,
+            "\t%d: (idx: %d) op node: modulo", depth, node_idx );
          break;
       }
       break;
@@ -263,14 +288,6 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
          astree_node( tree, node_idx )->prev_sibling, 
          astree_node( tree, node_idx )->next_sibling );
       break;
-
-#if 0
-   case ASTREE_NODE_TYPE_FUNC_CALL_PARMS:
-      debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) function call parms node",
-         depth, node_idx );
-      break;
-#endif
 
    default:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,

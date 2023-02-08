@@ -4,6 +4,8 @@
 
 #define MPY_PARSER_TOKEN_SZ_MAX 512
 
+#define MPY_PARSER_ERROR_UNEXPECTED_C (-2)
+
 #define MPY_PARSER_STATES( f ) \
    f( MPY_PARSER_STATE_NONE,              0  ) \
    f( MPY_PARSER_STATE_FUNC_DEF,          1  ) \
@@ -39,6 +41,14 @@
    debug_printf( 1, "new node idx: %d (prev: %d)", \
       new_idx, parser->tree_node_idx ); \
    parser->tree_node_idx = new_idx;
+
+#define mpy_parser_sym_to_op( sym ) \
+   ('+' == sym ? ASTREE_VALUE_TYPE_ADD : \
+      ('-' == sym ? ASTREE_VALUE_TYPE_SUBTRACT : \
+         ('/' == sym ? ASTREE_VALUE_TYPE_DIVIDE : \
+            ('*' == sym ? ASTREE_VALUE_TYPE_MULTIPLY : \
+               ('%' == sym ? ASTREE_VALUE_TYPE_MODULO: \
+               ASTREE_VALUE_TYPE_NONE)))))
 
 struct MPY_PARSER {
    uint8_t inside_indent;
