@@ -64,6 +64,7 @@ void astree_node_initialize(
    tree->nodes[node_idx].parent = parent_idx;
    tree->nodes[node_idx].self = node_idx;
    tree->nodes[node_idx].active = 1;
+   tree->nodes[node_idx].indent = -1;
    tree->nodes[node_idx].first_child = -1;
    tree->nodes[node_idx].next_sibling = -1;
    tree->nodes[node_idx].prev_sibling = -1;
@@ -177,13 +178,13 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
    switch( tree->nodes[node_idx].type ) {
    case ASTREE_NODE_TYPE_SEQUENCE:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) sequence node (\\t: %d)", depth, node_idx,
+         "\t%d: (idx: %d) sequence node (' ' %d)", depth, node_idx,
          tree->nodes[node_idx].indent );
       break;
 
    case ASTREE_NODE_TYPE_SEQ_TERM:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) sequence term node: %d (\\t: %d)", depth, node_idx,
+         "\t%d: (idx: %d) sequence term node: %d (' ' %d)", depth, node_idx,
          tree->nodes[node_idx].value.i, tree->nodes[node_idx].indent );
       break;
 
@@ -195,20 +196,23 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
 
    case ASTREE_NODE_TYPE_FUNC_CALL:
       debug_printf( ASTREE_DUMP_DEBUG_LVL, 
-         "\t%d: (idx: %d) function call node: %s", depth, node_idx,
-         tree->nodes[node_idx].value.s );
+         "\t%d: (idx: %d) function call node: %s (' ' %d)", depth, node_idx,
+         tree->nodes[node_idx].value.s,
+         tree->nodes[node_idx].indent );
       break;
 
    case ASTREE_NODE_TYPE_IF:
       debug_printf( ASTREE_DUMP_DEBUG_LVL, 
-         "\t%d: (idx: %d) if node (< %d, > %d)", depth, node_idx,
+         "\t%d: (idx: %d) if node (' ' %d < %d, > %d)", depth, node_idx,
+         astree_node( tree, node_idx )->indent,
          astree_node( tree, node_idx )->prev_sibling, 
          astree_node( tree, node_idx )->next_sibling );
       break;
 
    case ASTREE_NODE_TYPE_WHILE:
       debug_printf( ASTREE_DUMP_DEBUG_LVL, 
-         "\t%d: (idx: %d) while node", depth, node_idx );
+         "\t%d: (idx: %d) while node (' ' %d)", depth, node_idx,
+         astree_node( tree, node_idx )->indent );
       break;
 
    case ASTREE_NODE_TYPE_LITERAL:
@@ -287,8 +291,8 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
 
    case ASTREE_NODE_TYPE_VARIABLE:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) variable node: %s", depth, node_idx,
-         tree->nodes[node_idx].value.s );
+         "\t%d: (idx: %d) variable node: %s (' ' %d)", depth, node_idx,
+         tree->nodes[node_idx].value.s, tree->nodes[node_idx].indent );
       break;
 
    case ASTREE_NODE_TYPE_ASSIGN:

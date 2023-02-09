@@ -43,7 +43,7 @@ union ASTREE_NODE_VALUE {
 struct ASTREE_NODE {
    uint8_t active;
    uint8_t type;
-   uint8_t indent;
+   int8_t indent;
    uint8_t value_type;
    union ASTREE_NODE_VALUE value;
    int16_t self;

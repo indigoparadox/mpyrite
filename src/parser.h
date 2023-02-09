@@ -52,11 +52,11 @@
 
 struct MPY_PARSER {
    uint8_t inside_indent;
-   int this_line_indent;
-   int prev_line_indent;
-   int indent_divisor;
-   int state;
-   int prev_state;
+   int8_t this_line_indent;
+   int8_t prev_line_indent;
+   int8_t indent_divisor;
+   int8_t state;
+   int8_t prev_state;
    int16_t tree_node_idx;
    char token[MPY_PARSER_TOKEN_SZ_MAX];
    uint16_t token_sz;

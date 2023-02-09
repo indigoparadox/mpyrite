@@ -466,6 +466,7 @@ int16_t interp_tick( struct INTERP* interp ) {
    case ASTREE_NODE_TYPE_SEQ_TERM:
       /* Check the sequence parent to figure out what to do next. */
       /* TODO: Integrate function closure return hoop-jumping into this. */
+      /* XXX */
       left = astree_node( interp->tree, iter->value.i );
       assert( NULL != left );
       right = astree_node( interp->tree, left->parent );
@@ -496,10 +497,10 @@ int16_t interp_tick( struct INTERP* interp ) {
             astree_node( interp->tree, iter->first_child )->next_sibling
       ) {
          /* Both should now be on the stack. */
-         item1 = interp_stack_pop( interp );
-         assert( NULL != item1 );
          item2 = interp_stack_pop( interp );
          assert( NULL != item2 );
+         item1 = interp_stack_pop( interp );
+         assert( NULL != item1 );
 
          /* Compare item1 and item2. */
          /* TODO: Fill out this evaluation table for all types. */
@@ -520,6 +521,12 @@ int16_t interp_tick( struct INTERP* interp ) {
                (ASTREE_VALUE_TYPE_INT == item1->type &&
                   ASTREE_VALUE_TYPE_INT == item2->type &&
                   item1->value.i > item2->value.i)
+
+            )) || (ASTREE_VALUE_TYPE_LT == iter->value_type && (
+
+               (ASTREE_VALUE_TYPE_INT == item1->type &&
+                  ASTREE_VALUE_TYPE_INT == item2->type &&
+                  item1->value.i < item2->value.i)
             
             ))
          ) {

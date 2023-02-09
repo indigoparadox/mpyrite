@@ -79,6 +79,16 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
 
    /* TODO: Use indent to find matching if. */
 
+   /* Fast-forward to the last child of the current selected node. */
+   node_if = astree_node( parser->tree, parser->tree_node_idx );
+   assert( NULL != node_if );
+   node_if = astree_node( parser->tree, node_if->first_child );
+   assert( NULL != node_if );
+   while( -1 != node_if->next_sibling ) {
+      node_if = astree_node( parser->tree, node_if->next_sibling );
+   }
+   assert( ASTREE_NODE_TYPE_IF == node_if->type );
+
    #if 0
    astree_dump( parser->tree, 0, 0 );
    debug_printf( 1, "getting if of %d", parser->tree_node_idx );
@@ -88,27 +98,21 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
    node_if = astree_node( parser->tree, node_if->parent );
    assert( NULL != node_if );
    assert( ASTREE_NODE_TYPE_IF == node_if->type );
-   #endif
 
    /* Get the last child node of the parent (we should be on after rewind). */
    /* XXX */
    debug_printf( 1, "tree_idx: %d", parser->tree_node_idx );
    node_if = astree_node( parser->tree, parser->tree_node_idx );
    assert( NULL != node_if );
-   node_if = astree_node( parser->tree, node_if->first_child );
-   assert( NULL != node_if );
-   while( 0 <= node_if->next_sibling ) {
-      node_if = astree_node( parser->tree, node_if->next_sibling );
-      assert( NULL != node_if );
-   }
    astree_dump( parser->tree, 0, 0 );
-   debug_printf( 1, "node_if type: %d", node_if->type );
+   debug_printf( 1, "node_if %d type: %d", node_if->self, node_if->type );
    assert( ASTREE_NODE_TYPE_IF == node_if->type );
+   #endif
    
    /* Add the else sequence node. */
    else_node_idx = astree_node_add_child(
       parser->tree, node_if->self, ASTREE_NODE_TYPE_SEQUENCE,
-      parser->this_line_indent, NULL, 0 );
+      node_if->indent, NULL, 0 );
    debug_printf( 1, "adding node %d: else", else_node_idx );
    mpy_parser_node_idx( parser, else_node_idx );
    mpy_parser_state( parser, MPY_PARSER_STATE_NONE )
@@ -450,81 +454,70 @@ void mpy_parser_check_indent( struct MPY_PARSER* parser, char c ) {
       * iter_parent = NULL;
    int16_t term_node_idx = -1;
 
-   if( parser->inside_indent && ' ' != c ) {
-      parser->inside_indent = 0;
-      debug_printf( 1,
-         "line %d: ending indent at: %d",
-         parser->line_num, parser->this_line_indent );
-      if( 0 == parser->indent_divisor ) {
-         /* Set indent divisor based on first indented line. */
-         parser->indent_divisor = parser->this_line_indent;
-      }
-      if( parser->this_line_indent < parser->prev_line_indent ) {
-         /* Indent reduced, so rewind upwards. */
-
-         indent_diff = parser->prev_line_indent;
-         astree_dump( parser->tree, 0, 0 );
-         do {
-            /* Rewind upwards each level, one by one. */
-            debug_printf( 1,
-               "line %d: rewinding up from indent %d to indent %d",
-               parser->line_num,
-               indent_diff, indent_diff - parser->indent_divisor );
-
-            iter = astree_node( parser->tree, parser->tree_node_idx );
-            assert( NULL != iter );
-            iter_parent = astree_node( parser->tree, iter->parent );
-            assert( NULL != iter_parent );
-            do {
-
-               /* We need to test whether the next sibling is -1 here, because
-                * we're walking back up and this is the node that was last
-                * traversed.
-                */
-               if(
-                  NULL != iter &&
-                  ASTREE_NODE_TYPE_SEQUENCE == iter->type &&
-                  0 > iter->next_sibling
-               ) {
-                  /* Add sequence terminator. */
-                  term_node_idx = astree_node_add_child(
-                     parser->tree, parser->tree_node_idx,
-                     ASTREE_NODE_TYPE_SEQ_TERM, parser->this_line_indent,
-                     &(parser->tree_node_idx),
-                     sizeof( parser->tree_node_idx ) );
-                  debug_printf( 1, "added seq term node: %d", term_node_idx );
-               } else if( NULL != iter ) {
-                  debug_printf( 1, "not adding term at node %d",
-                     parser->tree_node_idx );
-               }
-
-               /* Do this loop at least once to get out of current sequence. */
-               mpy_parser_node_idx( parser,
-                  parser->tree->nodes[parser->tree_node_idx].parent );
-               assert( 0 <= parser->tree_node_idx );
-               iter = astree_node( parser->tree, parser->tree_node_idx );
-               assert( NULL != iter );
-               iter_parent = astree_node( parser->tree, iter->parent );
-
-            } while( ASTREE_NODE_TYPE_SEQUENCE != iter->type );
-
-            indent_diff -= parser->indent_divisor;
-            debug_printf( 1, "active node index is now: %d",
-            parser->tree_node_idx );
-         } while( 0 < indent_diff );
-            
-         /* Found the sequence node, move up to its parent
-          * func def/if/while/etc before we add more neighbors.
-          */
-          /*
-         assert( NULL != astree_node( parser->tree, iter->parent ) );
-         mpy_parser_node_idx( parser, iter->parent );
-         iter = astree_node( parser->tree, parser->tree_node_idx );
-         assert( NULL != iter );
-         mpy_parser_node_idx( parser, iter->parent );
-         */
-      }
+   if( !(parser->inside_indent) || ' ' == c ) {
+      /* We're still determining the current indent level. */
+      return;
    }
+
+   parser->inside_indent = 0;
+   debug_printf( 1,
+      "line %d: ending indent at: %d",
+      parser->line_num, parser->this_line_indent );
+   if( 0 == parser->indent_divisor ) {
+      /* Set indent divisor based on first indented line. */
+      parser->indent_divisor = parser->this_line_indent;
+   }
+
+   if( parser->this_line_indent >= parser->prev_line_indent ) {
+      /* Indent increased, so no rewind. */
+      debug_printf( 1, "indent increased to %d", parser->this_line_indent );
+      return;
+   }
+
+   /* Indent reduced, so rewind upwards. */
+
+   indent_diff = parser->this_line_indent / parser->indent_divisor;
+   debug_printf( 1, "rewinding to indent level: %d spaces (%d tabs)",
+      parser->this_line_indent, indent_diff );
+   astree_dump( parser->tree, 0, 0 );
+
+   iter = astree_node( parser->tree, parser->tree_node_idx );
+   assert( NULL != iter );
+   do {
+      if( 0 > iter->parent ) {
+         /* We can't go up any more! */
+         break;
+      }
+
+      if( ASTREE_NODE_TYPE_SEQUENCE == iter->type && 0 > iter->next_sibling ) {
+         /* Add sequence terminator. */
+         term_node_idx = astree_node_add_child(
+            parser->tree, parser->tree_node_idx,
+            ASTREE_NODE_TYPE_SEQ_TERM, parser->this_line_indent,
+            &(parser->tree_node_idx),
+            sizeof( parser->tree_node_idx ) );
+         debug_printf( 1, "added seq term node: %d", term_node_idx );
+      } else if( NULL != iter ) {
+         debug_printf( 1, "not adding term at node %d",
+            parser->tree_node_idx );
+      }
+
+      debug_printf( 1, "indent: %d, type: %d", iter->indent, iter->type );
+
+      mpy_parser_node_idx( parser, iter->parent );
+      iter = astree_node( parser->tree, iter->parent );
+      assert( NULL != iter );
+
+      /* XXX */
+   } while(
+      iter->indent > parser->this_line_indent ||
+      ASTREE_NODE_TYPE_SEQUENCE != iter->type ||
+      (NULL != astree_node( parser->tree, iter->parent ) &&
+      astree_node( parser->tree, iter->parent )->type == ASTREE_NODE_TYPE_FUNC_DEF)
+      /* indent == iter->indent) */
+   );
+
+   debug_printf( 1, "active node index is now: %d", parser->tree_node_idx );
 }
 
 int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
