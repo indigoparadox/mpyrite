@@ -71,6 +71,29 @@ int mpy_parser_add_node_while( struct MPY_PARSER* parser ) {
    return 0;
 }
 
+int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
+   int16_t else_node_idx = -1;
+   struct ASTREE_NODE* node_if = NULL;
+
+   astree_dump( parser->tree, 0, 0 );
+   debug_printf( 1, "getting if of %d", parser->tree_node_idx );
+   node_if = astree_node( parser->tree, parser->tree_node_idx );
+   assert( NULL != node_if );
+   assert( ASTREE_NODE_TYPE_SEQUENCE == node_if->type );
+   node_if = astree_node( parser->tree, node_if->parent );
+   assert( NULL != node_if );
+   assert( ASTREE_NODE_TYPE_IF == node_if->type );
+   
+   else_node_idx = 
+      astree_node_add_child( parser->tree, parser->tree_node_idx );
+   debug_printf( 1, "adding node %d: else", else_node_idx );
+   astree_node( parser->tree, else_node_idx )->type = ASTREE_NODE_TYPE_SEQUENCE;
+   mpy_parser_node_idx( parser, else_node_idx );
+   mpy_parser_state( parser, MPY_PARSER_STATE_NONE )
+
+   return 0;
+}
+
 #  define MPY_PARSER_STATEMENTS_ADD_CBS( token, type, add_cb ) add_cb,
 
 mpy_parser_add_cb g_mpy_parser_add_cbs[] = {
@@ -774,6 +797,11 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       ) {
          /* Just a normal char. */
          retval = mpy_parser_append_token( parser, c );
+
+      } else if( MPY_PARSER_STATE_VAR == parser->state ) {
+         /* Maybe it's an else: */
+
+         retval = mpy_parser_parse_token( parser, c );
 
       } else {
          /* TODO: Create a tuple/precedence node. */

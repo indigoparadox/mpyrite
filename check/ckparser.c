@@ -28,7 +28,15 @@ const char test_buffer_assign_op[] = "plusop = plusop + 1\n";
 
 const char test_buffer_while[] = "while 1:\n    whileplus = whileplus + 3\n";
 
-const char test_buffer_while_gt[] = "while 3 > whilegt:\n    whilegt = whilegt + 1\n";
+const char test_buffer_while_gt[] = \
+   "while 3 > whilegt:\n" \
+   "    whilegt = whilegt + 1\n";
+
+const char test_buffer_if_else[] = \
+   "if x > 3:\n" \
+   "    ielse = 0\n" \
+   "else:\n" \
+   "    ielse = 6\n";
 
 const char test_buffer_func_def[] = "def main( foo ):\n";
 
@@ -455,6 +463,52 @@ START_TEST( check_parser_while_gt ) {
 }
 END_TEST
 
+START_TEST( check_parser_if_else ) {
+   struct ASTREE_NODE* iter = NULL;
+   int16_t retval = 0;
+   
+   retval = parser_parse_buffer(
+      &g_parser, &g_tree, test_buffer_if_else,
+      strlen( test_buffer_if_else ) );
+
+   astree_dump( &g_tree, 0, 0 );
+
+   ck_assert_int_eq( retval, 0 );
+
+   iter = astree_node( &g_tree, 0 );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+   /* if */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_IF );
+
+   /* > */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_COND );
+
+   /* x */
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* 3 */
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* : */
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_SEQUENCE );
+
+}
+END_TEST
+
 START_TEST( check_parser_assign_op ) {
    struct ASTREE_NODE* iter = NULL;
    int16_t retval = 0;
@@ -723,6 +777,7 @@ Suite* parser_suite( void ) {
    tcase_add_test( tc_assign, check_parser_assign ); 
    tcase_add_test( tc_control, check_parser_while );
    tcase_add_test( tc_control, check_parser_while_gt );
+   tcase_add_test( tc_control, check_parser_if_else );
    tcase_add_test( tc_assign, check_parser_assign_op );
    tcase_add_test( tc_integ, check_parser_a ); 
 

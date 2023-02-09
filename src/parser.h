@@ -77,7 +77,8 @@ int parser_parse_buffer(
 #define MPY_PARSER_STATEMENTS( f ) \
    f( "def", ASTREE_NODE_TYPE_FUNC_DEF, mpy_parser_add_node_def ) \
    f( "if", ASTREE_NODE_TYPE_IF, mpy_parser_add_node_if ) \
-   f( "while", ASTREE_NODE_TYPE_WHILE, mpy_parser_add_node_while )
+   f( "while", ASTREE_NODE_TYPE_WHILE, mpy_parser_add_node_while ) \
+   f( "else", ASTREE_NODE_TYPE_SEQUENCE, mpy_parser_add_node_else )
 
 #ifdef PARSER_C
 
