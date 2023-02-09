@@ -19,6 +19,7 @@ const char test_buffer_a[] =
    "        if foo > 3:\n" \
    "            x = \"the x\"\n" \
    "            print( \"hello! \" + foo )\n" \
+   "        print( \"buzz\" )\n" \
    "\n" \
    "if '__main__' == __name__:\n" \
    "    main( 123, \"test\" )\n" \
@@ -497,7 +498,7 @@ START_TEST( check_parser_if_else ) {
    /* 3 */
    iter = astree_node( &g_tree, iter->next_sibling );
    ck_assert_ptr_ne( iter, NULL );
-   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_LITERAL );
 
    /* : */
    iter = astree_node( &g_tree, iter->parent );
@@ -679,6 +680,7 @@ START_TEST( check_parser_a ) {
 
    /* print */
    iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
    iter = astree_node( &g_tree, iter->next_sibling );
    ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_CALL );
@@ -697,6 +699,21 @@ START_TEST( check_parser_a ) {
    iter = astree_node( &g_tree, iter->next_sibling );
    ck_assert_ptr_ne( iter, NULL );
    ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_VARIABLE );
+
+   /* print */
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->parent );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->next_sibling );
+   ck_assert_ptr_ne( iter, NULL );
+   iter = astree_node( &g_tree, iter->first_child );
+   ck_assert_ptr_ne( iter, NULL );
+   ck_assert_int_eq( iter->type, ASTREE_NODE_TYPE_FUNC_CALL );
 
    /* if */
    iter = astree_node( &g_tree, 0 ); /* seq */

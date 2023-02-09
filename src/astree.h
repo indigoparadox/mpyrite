@@ -46,6 +46,7 @@ struct ASTREE_NODE {
    uint8_t indent;
    uint8_t value_type;
    union ASTREE_NODE_VALUE value;
+   int16_t self;
    int16_t parent;
    int16_t first_child;
    int16_t next_sibling;

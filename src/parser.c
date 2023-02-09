@@ -79,6 +79,7 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
 
    /* TODO: Use indent to find matching if. */
 
+   #if 0
    astree_dump( parser->tree, 0, 0 );
    debug_printf( 1, "getting if of %d", parser->tree_node_idx );
    node_if = astree_node( parser->tree, parser->tree_node_idx );
@@ -87,9 +88,26 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
    node_if = astree_node( parser->tree, node_if->parent );
    assert( NULL != node_if );
    assert( ASTREE_NODE_TYPE_IF == node_if->type );
+   #endif
+
+   /* Get the last child node of the parent (we should be on after rewind). */
+   /* XXX */
+   debug_printf( 1, "tree_idx: %d", parser->tree_node_idx );
+   node_if = astree_node( parser->tree, parser->tree_node_idx );
+   assert( NULL != node_if );
+   node_if = astree_node( parser->tree, node_if->first_child );
+   assert( NULL != node_if );
+   while( 0 <= node_if->next_sibling ) {
+      node_if = astree_node( parser->tree, node_if->next_sibling );
+      assert( NULL != node_if );
+   }
+   astree_dump( parser->tree, 0, 0 );
+   debug_printf( 1, "node_if type: %d", node_if->type );
+   assert( ASTREE_NODE_TYPE_IF == node_if->type );
    
+   /* Add the else sequence node. */
    else_node_idx = astree_node_add_child(
-      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_SEQUENCE,
+      parser->tree, node_if->self, ASTREE_NODE_TYPE_SEQUENCE,
       parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding node %d: else", else_node_idx );
    mpy_parser_node_idx( parser, else_node_idx );
@@ -445,6 +463,7 @@ void mpy_parser_check_indent( struct MPY_PARSER* parser, char c ) {
          /* Indent reduced, so rewind upwards. */
 
          indent_diff = parser->prev_line_indent;
+         astree_dump( parser->tree, 0, 0 );
          do {
             /* Rewind upwards each level, one by one. */
             debug_printf( 1,

@@ -62,6 +62,7 @@ void astree_node_initialize(
 ) {
    assert( parent_idx != node_idx );
    tree->nodes[node_idx].parent = parent_idx;
+   tree->nodes[node_idx].self = node_idx;
    tree->nodes[node_idx].active = 1;
    tree->nodes[node_idx].first_child = -1;
    tree->nodes[node_idx].next_sibling = -1;
@@ -176,13 +177,14 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
    switch( tree->nodes[node_idx].type ) {
    case ASTREE_NODE_TYPE_SEQUENCE:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) sequence node", depth, node_idx );
+         "\t%d: (idx: %d) sequence node (\\t: %d)", depth, node_idx,
+         tree->nodes[node_idx].indent );
       break;
 
    case ASTREE_NODE_TYPE_SEQ_TERM:
       debug_printf( ASTREE_DUMP_DEBUG_LVL,
-         "\t%d: (idx: %d) sequence term node: %d", depth, node_idx,
-         tree->nodes[node_idx].value.i );
+         "\t%d: (idx: %d) sequence term node: %d (\\t: %d)", depth, node_idx,
+         tree->nodes[node_idx].value.i, tree->nodes[node_idx].indent );
       break;
 
    case ASTREE_NODE_TYPE_FUNC_DEF:
@@ -199,7 +201,9 @@ void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {
 
    case ASTREE_NODE_TYPE_IF:
       debug_printf( ASTREE_DUMP_DEBUG_LVL, 
-         "\t%d: (idx: %d) if node", depth, node_idx );
+         "\t%d: (idx: %d) if node (< %d, > %d)", depth, node_idx,
+         astree_node( tree, node_idx )->prev_sibling, 
+         astree_node( tree, node_idx )->next_sibling );
       break;
 
    case ASTREE_NODE_TYPE_WHILE:
