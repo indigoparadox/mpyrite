@@ -26,7 +26,8 @@ START_TEST( check_astree_node_add ) {
 
    /* Test adding children. */
    for( i = 0 ; i < _i ; i++ ) {
-      node_id = astree_node_add_child( &g_tree, i );
+      node_id = astree_node_add_child( &g_tree, i, ASTREE_NODE_TYPE_SEQUENCE,
+         0, NULL, 0 );
 
       ck_assert_int_eq( node_id, i + 1 );
       iter = astree_node( &g_tree, node_id );
@@ -39,7 +40,8 @@ START_TEST( check_astree_node_add ) {
 
    /* Test adding siblings. */
    for( j = i ; j < (_i * 2) ; j++ ) {
-      node_id = astree_node_add_child( &g_tree, i );
+      node_id = astree_node_add_child( &g_tree, i, ASTREE_NODE_TYPE_SEQUENCE,
+         0, NULL, 0 );
 
       ck_assert_int_eq( node_id, j + 1 );
       iter = astree_node( &g_tree, node_id );
@@ -63,9 +65,12 @@ START_TEST( check_astree_node_insert ) {
       node_id_ichildr = -1;
    struct ASTREE_NODE* iter = NULL;
 
-   node_id_root = astree_node_add_child( &g_tree, 0 );
-   node_id_childl = astree_node_add_child( &g_tree, node_id_root );
-   node_id_childr = astree_node_add_child( &g_tree, node_id_root );
+   node_id_root = astree_node_add_child( &g_tree, 0,
+      ASTREE_NODE_TYPE_SEQUENCE, 0, NULL, 0 );
+   node_id_childl = astree_node_add_child( &g_tree, node_id_root,
+      ASTREE_NODE_TYPE_SEQUENCE, 0, NULL, 0 );
+   node_id_childr = astree_node_add_child( &g_tree, node_id_root,
+      ASTREE_NODE_TYPE_SEQUENCE, 0, NULL, 0 );
 
    iter = astree_node( &g_tree, node_id_root );
    ck_assert_ptr_ne( iter, NULL );

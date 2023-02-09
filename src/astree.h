@@ -66,7 +66,9 @@ int16_t astree_node_find_free( struct ASTREE* tree );
 void astree_node_initialize(
    struct ASTREE* tree, int16_t node_idx, int16_t parent_idx );
 int16_t astree_node_insert_as_parent( struct ASTREE* tree, int16_t node_idx );
-int16_t astree_node_add_child( struct ASTREE* tree, int16_t parent_idx );
+int16_t astree_node_add_child(
+   struct ASTREE* tree, int16_t parent_idx, uint8_t type, uint8_t indent,
+   const void* value, uint16_t value_sz );
 void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth );
 
 #endif /* !ASTREE_H */

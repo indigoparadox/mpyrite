@@ -121,39 +121,50 @@ cleanup:
    return node_idx_out;
 }
 
-int16_t astree_node_add_child( struct ASTREE* tree, int16_t parent_idx ) {
-   int16_t iter = -1,
-      node_out = -1;
+int16_t astree_node_add_child(
+   struct ASTREE* tree, int16_t parent_idx, uint8_t type,
+   uint8_t indent, const void* value, uint16_t value_sz
+) {
+   int16_t iter_idx = -1,
+      node_out_idx = -1;
+   struct ASTREE_NODE* node_out = NULL;
 
    /* Grab a free node to append. */
-   node_out = astree_node_find_free( tree );
-   if( 0 > node_out ) {
+   node_out_idx = astree_node_find_free( tree );
+   if( 0 > node_out_idx ) {
       goto cleanup;
    }
 
    /* Figure out where to append it. */
    if( 0 > tree->nodes[parent_idx].first_child ) {
       /* Create the first child. */
-      tree->nodes[parent_idx].first_child = node_out;
+      tree->nodes[parent_idx].first_child = node_out_idx;
    } else {
       for(
-         iter = tree->nodes[parent_idx].first_child ;
-         0 <= tree->nodes[iter].next_sibling ;
-         iter = tree->nodes[iter].next_sibling
+         iter_idx = tree->nodes[parent_idx].first_child ;
+         0 <= tree->nodes[iter_idx].next_sibling ;
+         iter_idx = tree->nodes[iter_idx].next_sibling
       ) {}
 
       /* Create the new sibling of the last child. */
-      tree->nodes[iter].next_sibling = node_out;
-      assert( -1 != iter );
+      tree->nodes[iter_idx].next_sibling = node_out_idx;
+      assert( -1 != iter_idx );
    }
 
-   astree_node_initialize( tree, node_out, parent_idx );
+   astree_node_initialize( tree, node_out_idx, parent_idx );
+   node_out = astree_node( tree, node_out_idx );
+   assert( NULL != node_out );
+   node_out->type = type;
+   node_out->indent = indent;
+   if( NULL != value && value_sz < sizeof( union ASTREE_NODE_VALUE ) ) {
+      memcpy( &(node_out->value), value, value_sz );
+   }
 
-   tree->nodes[node_out].prev_sibling = iter;
+   tree->nodes[node_out_idx].prev_sibling = iter_idx;
 
 cleanup:
 
-   return node_out;
+   return node_out_idx;
 }
 
 void astree_dump( struct ASTREE* tree, int16_t node_idx, int16_t depth ) {

@@ -30,8 +30,9 @@ int mpy_parser_is_numeric( const char* token, int token_sz ) {
 int mpy_parser_add_node_def( struct MPY_PARSER* parser ) {
    int16_t def_node_idx = -1;
 
-   def_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
-   astree_node( parser->tree, def_node_idx )->type = ASTREE_NODE_TYPE_FUNC_DEF;
+   def_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_FUNC_DEF,
+      parser->this_line_indent, NULL, 0 );
    mpy_parser_node_idx( parser, def_node_idx );
    mpy_parser_state( parser, MPY_PARSER_STATE_FUNC_DEF );
 
@@ -49,9 +50,10 @@ int mpy_parser_add_node_if( struct MPY_PARSER* parser ) {
    assert( ASTREE_NODE_TYPE_LITERAL !=
       astree_node( parser->tree, parser->tree_node_idx )->type );
 
-   if_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
+   if_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_IF,
+      parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding node %d: if", if_node_idx );
-   astree_node( parser->tree, if_node_idx )->type = ASTREE_NODE_TYPE_IF;
    mpy_parser_node_idx( parser, if_node_idx );
    mpy_parser_state( parser, MPY_PARSER_STATE_IF_COND )
 
@@ -61,10 +63,10 @@ int mpy_parser_add_node_if( struct MPY_PARSER* parser ) {
 int mpy_parser_add_node_while( struct MPY_PARSER* parser ) {
    int16_t while_node_idx = -1;
 
-   while_node_idx = 
-      astree_node_add_child( parser->tree, parser->tree_node_idx );
+   while_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_WHILE,
+      parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding node %d: while", while_node_idx );
-   astree_node( parser->tree, while_node_idx )->type = ASTREE_NODE_TYPE_WHILE;
    mpy_parser_node_idx( parser, while_node_idx );
    mpy_parser_state( parser, MPY_PARSER_STATE_WHILE_COND )
 
@@ -75,6 +77,8 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
    int16_t else_node_idx = -1;
    struct ASTREE_NODE* node_if = NULL;
 
+   /* TODO: Use indent to find matching if. */
+
    astree_dump( parser->tree, 0, 0 );
    debug_printf( 1, "getting if of %d", parser->tree_node_idx );
    node_if = astree_node( parser->tree, parser->tree_node_idx );
@@ -84,10 +88,10 @@ int mpy_parser_add_node_else( struct MPY_PARSER* parser ) {
    assert( NULL != node_if );
    assert( ASTREE_NODE_TYPE_IF == node_if->type );
    
-   else_node_idx = 
-      astree_node_add_child( parser->tree, parser->tree_node_idx );
+   else_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_SEQUENCE,
+      parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding node %d: else", else_node_idx );
-   astree_node( parser->tree, else_node_idx )->type = ASTREE_NODE_TYPE_SEQUENCE;
    mpy_parser_node_idx( parser, else_node_idx );
    mpy_parser_state( parser, MPY_PARSER_STATE_NONE )
 
@@ -104,25 +108,11 @@ mpy_parser_add_cb g_mpy_parser_add_cbs[] = {
 int mpy_parser_add_node_sequence( struct MPY_PARSER* parser ) {
    int16_t seq_node_idx = -1;
 
-   seq_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
+   seq_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_SEQUENCE,
+      parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding seq node %d", seq_node_idx );
-   astree_node( parser->tree, seq_node_idx )->type = ASTREE_NODE_TYPE_SEQUENCE;
    mpy_parser_node_idx( parser, seq_node_idx );
-
-   return 0;
-}
-
-int mpy_parser_add_node_variable(
-   struct MPY_PARSER* parser, const char* name, uint8_t node_type
-) {
-   int16_t var_node_idx = -1;
-
-   var_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
-   debug_printf( 1, "adding var node %d: %s", var_node_idx, name );
-   astree_node( parser->tree, var_node_idx )->type = node_type;
-   strncpy(
-      parser->tree->nodes[var_node_idx].value.s, name, ASTREE_NODE_VALUE_SZ_MAX );
-   mpy_parser_node_idx( parser, var_node_idx );
 
    return 0;
 }
@@ -132,13 +122,10 @@ int mpy_parser_add_node_literal(
 ) {
    int16_t value_node_idx = -1;
 
-   /* Note that this does NOT move the parser's focus to the created node! */
-   /* Nor does it change the parser's state! */
-
-   value_node_idx =
-      astree_node_add_child( parser->tree, parser->tree_node_idx );
+   value_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_LITERAL,
+      parser->this_line_indent, NULL, 0 );
    debug_printf( 1, "adding literal node %d: \"%s\"", value_node_idx, value );
-   astree_node( parser->tree, value_node_idx )->type = ASTREE_NODE_TYPE_LITERAL;
    astree_node( parser->tree, value_node_idx )->value_type = value_type;
    mpy_parser_node_idx( parser, value_node_idx );
 
@@ -166,12 +153,10 @@ int mpy_parser_add_node_literal(
 int mpy_parser_add_node_call( struct MPY_PARSER* parser, const char* name ) {
    int16_t call_node_idx = -1;
 
-   call_node_idx = astree_node_add_child( parser->tree, parser->tree_node_idx );
-   astree_node( parser->tree, call_node_idx )->type =
-      ASTREE_NODE_TYPE_FUNC_CALL;
-   strncpy(
-      astree_node( parser->tree, call_node_idx )->value.s,
-      name, ASTREE_NODE_VALUE_SZ_MAX );
+   call_node_idx = astree_node_add_child(
+      parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_FUNC_CALL,
+      parser->this_line_indent, name, strlen( name ) );
+   debug_printf( 1, "adding func call node %d: \"%s\"", call_node_idx, name );
    mpy_parser_node_idx( parser, call_node_idx );
 
    return 0;
@@ -278,6 +263,7 @@ void mpy_parser_rewind( struct MPY_PARSER* parser, int node_type ) {
 
 int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    uint16_t i = 0;
+   int16_t node_new_idx = -1;
    int retval = 0;
    struct ASTREE_NODE* cnode = &(parser->tree->nodes[parser->tree_node_idx]);
 
@@ -343,9 +329,15 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
             parser, parser->token, ASTREE_VALUE_TYPE_STRING );
 
       } else {
-         mpy_parser_add_node_variable( parser, parser->token,
+         /* Add variable/func def parm node. */
+         node_new_idx = astree_node_add_child(
+            parser->tree, parser->tree_node_idx, 
             parser->prev_state == MPY_PARSER_STATE_FUNC_DEF_PARMS ?
-               ASTREE_NODE_TYPE_FUNC_DEF_PARM : ASTREE_NODE_TYPE_VARIABLE );
+               ASTREE_NODE_TYPE_FUNC_DEF_PARM : ASTREE_NODE_TYPE_VARIABLE,
+            parser->this_line_indent,
+            parser->token, parser->token_sz );
+         assert( 0 < node_new_idx );
+         mpy_parser_node_idx( parser, node_new_idx );
       }
       mpy_parser_reset_after_var( parser );
       goto cleanup;
@@ -387,8 +379,11 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
 
    /* Otherwise it must be a function call or variable. */
    if( ' ' == trig_c || ',' == trig_c ) {
-      retval = mpy_parser_add_node_variable(
-         parser, parser->token, ASTREE_NODE_TYPE_VARIABLE );
+      node_new_idx = astree_node_add_child(
+         parser->tree, parser->tree_node_idx, ASTREE_NODE_TYPE_VARIABLE,
+         parser->this_line_indent, parser->token, parser->token_sz );
+      assert( 0 < node_new_idx );
+      mpy_parser_node_idx( parser, node_new_idx );
    }
 
 cleanup:
@@ -474,12 +469,11 @@ void mpy_parser_check_indent( struct MPY_PARSER* parser, char c ) {
                ) {
                   /* Add sequence terminator. */
                   term_node_idx = astree_node_add_child(
-                     parser->tree, parser->tree_node_idx );
-                  debug_printf( 1, "adding seq term node %d", term_node_idx );
-                  astree_node( parser->tree, term_node_idx )->type =
-                     ASTREE_NODE_TYPE_SEQ_TERM;
-                  astree_node( parser->tree, term_node_idx )->value.i =
-                     parser->tree_node_idx;
+                     parser->tree, parser->tree_node_idx,
+                     ASTREE_NODE_TYPE_SEQ_TERM, parser->this_line_indent,
+                     &(parser->tree_node_idx),
+                     sizeof( parser->tree_node_idx ) );
+                  debug_printf( 1, "added seq term node: %d", term_node_idx );
                } else if( NULL != iter ) {
                   debug_printf( 1, "not adding term at node %d",
                      parser->tree_node_idx );
