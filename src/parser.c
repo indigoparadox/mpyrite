@@ -9,7 +9,8 @@
 #include "parser.h"
 
 int mpy_parser_is_numeric( const char* token, int token_sz ) {
-   int i = 0;
+   int i = 0,
+      i_start = 0;
 
    if( 0 >= token_sz ) {
       /* Empty is NOT numeric! */
@@ -17,7 +18,12 @@ int mpy_parser_is_numeric( const char* token, int token_sz ) {
       return 0;
    }
 
-   for( i = 0 ; token_sz > i ; i++ ) {
+   if( '-' == token[0] ) {
+      /* Possibly negative number. */
+      i_start = 1;
+   }
+
+   for( i = i_start ; token_sz > i ; i++ ) {
       if( 48 > token[i] || 57 < token[i] ) {
          debug_printf( 0, "token \"%s\" not numeric: %c", token, token[i] );
          return 0;
@@ -674,6 +680,15 @@ int mpy_parser_parse_c( struct MPY_PARSER* parser, char c ) {
       break;
 
    case '-':
+      if(
+         MPY_PARSER_STATE_FUNC_CALL_PARMS == parser->state ||
+         MPY_PARSER_STATE_ASSIGN == parser->state
+      ) {
+         /* Probably a negative number? */
+         retval = mpy_parser_append_token( parser, c );
+         break;
+      }
+
    case '*':
    case '/':
    case '+':

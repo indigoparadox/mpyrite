@@ -458,7 +458,19 @@ int16_t interp_tick( struct INTERP* interp ) {
          } else {
             /* If is FALSE. */
             debug_printf( 1, "if condition FALSE" );
-            interp_set_pc( interp, iter->next_sibling );
+
+            right = astree_node( interp->tree, iter->first_child );
+            right = astree_node( interp->tree, right->next_sibling );
+            right = astree_node( interp->tree, right->next_sibling );
+
+            if( NULL != right ) {
+               /* Use ELSE instead. */
+               assert( ASTREE_NODE_TYPE_SEQUENCE == right->type );
+               interp_set_pc( interp, right->self );
+            } else {
+               /* Just move on to next sibling. */
+               interp_set_pc( interp, iter->next_sibling );
+            }
          }
       }
       break;
@@ -477,6 +489,15 @@ int16_t interp_tick( struct INTERP* interp ) {
             iter->value.i );
          interp_set_pc( interp, left->parent );
          break;
+
+      case ASTREE_NODE_TYPE_IF:
+         debug_printf( 1, "if sequence termination, continue to: %d",
+            right->next_sibling );
+         interp_set_pc( interp, right->next_sibling );
+         /* In case next instruction needs interp_is_first_pass(). */
+         interp->prev_pc = right->self;
+         break;
+
       default:
          /* Just go to (presumably -1) child so handler above can handle it. */
          /* TODO: Integrate that handler here. */
