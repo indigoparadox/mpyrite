@@ -68,6 +68,8 @@ int main( int argc, char** argv ) {
       "Script file to interpret.", 0,
       (maug_cli_cb)mpy_cli_f, NULL, &script_path );
 
+   maug_mzero( &args, sizeof( struct RETROFLAT_ARGS ) );
+
    args.screen_w = 320;
    args.screen_h = 200;
    args.title = "mpy";
@@ -110,6 +112,7 @@ int main( int argc, char** argv ) {
    interp_set_func( &interp, "release", &mpy_release, INTERP_FUNC_CB );
    interp_set_func( &interp, "rect", &mpy_rect, INTERP_FUNC_CB );
 
+   maug_mzero( &data, sizeof( struct MPY_DATA ) );
    data.init = 0;
    data.interp = &interp;
 

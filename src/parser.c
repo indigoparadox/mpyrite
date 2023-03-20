@@ -295,7 +295,7 @@ int mpy_parser_parse_token( struct MPY_PARSER* parser, char trig_c ) {
    int retval = 0;
    struct ASTREE_NODE* cnode = &(parser->tree->nodes[parser->tree_node_idx]);
 
-   if( 0 >= parser->token_sz ) {
+   if( 0 == parser->token_sz ) {
       if( '\n' == trig_c || '\r' == trig_c ) {
          debug_printf( 1, "empty token, trig: '\\n'" );
       } else {
