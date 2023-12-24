@@ -120,7 +120,7 @@ int main( int argc, char** argv ) {
 
    /* === Main Loop === */
 
-   retroflat_loop( (retroflat_loop_iter)mpy_loop, &data );
+   retroflat_loop( NULL, (retroflat_loop_iter)mpy_loop, &data );
 
 cleanup:
 
