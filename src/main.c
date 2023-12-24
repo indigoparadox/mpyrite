@@ -63,6 +63,8 @@ int main( int argc, char** argv ) {
 
    /* === Setup === */
 
+   logging_init();
+
    retval = maug_add_arg(
       MAUG_CLI_SIGIL "f", MAUG_CLI_SIGIL_SZ + 2,
       "Script file to interpret.", 0,
@@ -137,6 +139,8 @@ cleanup:
    }
 
    interp_free( &interp );
+
+   logging_shutdown();
 
 #endif /* !MAUG_OS_WASM */
 
