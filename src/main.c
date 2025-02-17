@@ -68,7 +68,7 @@ int main( int argc, char** argv ) {
    retval = maug_add_arg(
       MAUG_CLI_SIGIL "f", MAUG_CLI_SIGIL_SZ + 2,
       "Script file to interpret.", 0,
-      (maug_cli_cb)mpy_cli_f, NULL, &script_path );
+      (maug_cli_cb)mpy_cli_f, &script_path );
 
    maug_mzero( &args, sizeof( struct RETROFLAT_ARGS ) );
 

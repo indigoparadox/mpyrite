@@ -8,7 +8,7 @@ include maug/Makefile.inc
 # Target-specific options.
 .PHONY: clean
 
-all: mpyrit.ale mpyrit.sdl mpyritd.exe mpyritw.exe mpyritnt.exe mpyrit.html
+all: mpyrit.ale mpyrit.sdl mpyritd.exe mpyritw.exe mpyritnt.exe
 
 CHECK_C_FILES=check/check.c check/ckparser.c src/parser.c src/astree.c check/ckastree.c src/interp.c
 
