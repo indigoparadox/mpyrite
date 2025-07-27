@@ -37,10 +37,12 @@ void mpy_loop( struct MPY_DATA* data ) {
    }
 }
 
-static int mpy_cli_f( const char* arg, char** p_script_path ) {
+static int mpy_cli_f(
+   const char* arg, ssize_t arg_c, char** p_script_path
+) {
    if( 0 == strncmp( MAUG_CLI_SIGIL "f", arg, MAUG_CLI_SIGIL_SZ + 2 ) ) {
       /* The next arg must be the new var. */
-   } else {
+   } else if( 0 < strlen( arg ) ) {
       assert( NULL == *p_script_path );
       *p_script_path = calloc( 1, strlen( arg ) + 1 );
       strncpy( *p_script_path, arg, strlen( arg ) );
@@ -63,6 +65,10 @@ int main( int argc, char** argv ) {
 
    /* === Setup === */
 
+   maug_mzero( &parser, sizeof( struct MPY_PARSER ) );
+   maug_mzero( &tree, sizeof( struct ASTREE ) );
+   maug_mzero( &interp, sizeof( struct INTERP ) );
+
    logging_init();
 
    retval = maug_add_arg(
@@ -82,12 +88,21 @@ int main( int argc, char** argv ) {
       goto cleanup;
    }
 
-   assert( NULL != script_path );
+   if( NULL == script_path ) {
+      error_printf( "no script file specified with " MAUG_CLI_SIGIL "f!" );
+      retval = MERROR_PARSE;
+      goto cleanup;
+   }
 
    /* Read script file. */
    /* TODO: Convert this to import handler. */
    script_file = fopen( script_path, "r" );
-   assert( NULL != script_file );
+   if( NULL == script_file ) {
+      error_printf( "invalid script file specified with " MAUG_CLI_SIGIL "f!" );
+      retval = MERROR_PARSE;
+      goto cleanup;
+   }
+
    fseek( script_file, 0, SEEK_END );
    script_sz = ftell( script_file );
    fseek( script_file, 0, SEEK_SET );
